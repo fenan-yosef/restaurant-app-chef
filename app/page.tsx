@@ -1,103 +1,223 @@
-import Image from "next/image";
+"use client"
+
+import type React from "react"
+
+import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
+import type { Product, CartItem } from "@/lib/types"
+import { useAuth } from "@/hooks/useAuth"
+import { useTelegram } from "@/hooks/useTelegram"
+import ProductCard from "@/components/ProductCard"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Badge } from "@/components/ui/badge"
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { ShoppingCart, Search, Clock } from "lucide-react"
 
 export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm/6 text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-[family-name:var(--font-geist-mono)] font-semibold">
-              app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+  const router = useRouter()
+  const { user, isAuthenticated, isLoading: authLoading } = useAuth()
+  const { hapticFeedback, showMainButton, hideMainButton } = useTelegram()
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
+  const [products, setProducts] = useState<Product[]>([])
+  const [cartItems, setCartItems] = useState<CartItem[]>([])
+  const [categories, setCategories] = useState<string[]>([])
+  const [selectedCategory, setSelectedCategory] = useState<string>("all")
+  const [searchQuery, setSearchQuery] = useState("")
+  const [isLoading, setIsLoading] = useState(true)
+
+  // Fetch products
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        const response = await fetch("/api/products")
+        if (response.ok) {
+          const data = await response.json()
+          setProducts(data)
+
+          // Extract unique categories
+          const uniqueCategories = [...new Set(data.map((p: Product) => p.category).filter(Boolean))] as string[]
+          setCategories(uniqueCategories)
+        }
+      } catch (error) {
+        console.error("Failed to fetch products:", error)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    fetchProducts()
+  }, [])
+
+  // Fetch cart items
+  useEffect(() => {
+    const fetchCart = async () => {
+      if (user) {
+        try {
+          const response = await fetch(`/api/cart?userId=${user.id}`)
+          if (response.ok) {
+            const data = await response.json()
+            setCartItems(data)
+          }
+        } catch (error) {
+          console.error("Failed to fetch cart:", error)
+        }
+      }
+    }
+
+    fetchCart()
+  }, [user])
+
+  // Update main button based on cart
+  useEffect(() => {
+    const totalItems = cartItems.reduce((sum, item) => sum + item.quantity, 0)
+    const totalAmount = cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0)
+
+    if (totalItems > 0) {
+      showMainButton(`View Cart (${totalItems}) - $${totalAmount.toFixed(2)}`, () => router.push("/cart"))
+    } else {
+      hideMainButton()
+    }
+  }, [cartItems, showMainButton, hideMainButton, router])
+
+  const handleAddToCart = async (productId: number, quantity: number) => {
+    if (!user) return
+
+    try {
+      const response = await fetch("/api/cart", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          userId: user.id,
+          productId,
+          quantity,
+        }),
+      })
+
+      if (response.ok) {
+        hapticFeedback("success")
+        // Refresh cart
+        const cartResponse = await fetch(`/api/cart?userId=${user.id}`)
+        if (cartResponse.ok) {
+          const cartData = await cartResponse.json()
+          setCartItems(cartData)
+        }
+      }
+    } catch (error) {
+      console.error("Failed to add to cart:", error)
+      hapticFeedback("error")
+    }
+  }
+
+  const filteredProducts = products.filter((product) => {
+    const matchesCategory = selectedCategory === "all" || product.category === selectedCategory
+    const matchesSearch =
+      product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      product.description.toLowerCase().includes(searchQuery.toLowerCase())
+    return matchesCategory && matchesSearch
+  })
+
+  const getCartQuantity = (productId: number) => {
+    const cartItem = cartItems.find((item) => item.product_id === productId)
+    return cartItem ? cartItem.quantity : 0
+  }
+
+  if (authLoading || isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      </div>
+    )
+  }
+
+  if (!isAuthenticated) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen p-4">
+        <h1 className="text-2xl font-bold mb-4">Welcome to Our Bakery!</h1>
+        <p className="text-gray-600 text-center mb-4">Please open this app through Telegram to continue.</p>
+      </div>
+    )
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      {/* Header */}
+      <div className="bg-white shadow-sm border-b sticky top-0 z-10">
+        <div className="px-4 py-3">
+          <div className="flex items-center justify-between mb-3">
+            <div>
+              <h1 className="text-xl font-bold">🥖 Artisan Bakery</h1>
+              <p className="text-sm text-gray-600">Welcome, {user?.first_name}!</p>
+            </div>
+            <div className="flex space-x-2">
+              <Button variant="outline" size="sm" onClick={() => router.push("/orders")}>
+                <Clock className="h-4 w-4 mr-1" />
+                Orders
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => router.push("/cart")} className="relative">
+                <ShoppingCart className="h-4 w-4" />
+                {cartItems.length > 0 && (
+                  <Badge className="absolute -top-2 -right-2 h-5 w-5 p-0 text-xs">
+                    {cartItems.reduce((sum, item) => sum + item.quantity, 0)}
+                  </Badge>
+                )}
+              </Button>
+            </div>
+          </div>
+
+          {/* Search */}
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <Input
+              placeholder="Search products..."
+              value={searchQuery}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchQuery(e.target.value)}
+              className="pl-10"
             />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+          </div>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+      </div>
+
+      {/* Categories */}
+      <div className="bg-white border-b">
+        <div className="px-4 py-3">
+          <Tabs value={selectedCategory} onValueChange={setSelectedCategory}>
+            <TabsList className="grid w-full grid-cols-auto">
+              <TabsTrigger value="all">All</TabsTrigger>
+              {categories.map((category) => (
+                <TabsTrigger key={category} value={category}>
+                  {category}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+          </Tabs>
+        </div>
+      </div>
+
+      {/* Products Grid */}
+      <div className="p-4">
+        {filteredProducts.length === 0 ? (
+          <div className="text-center py-12">
+            <p className="text-gray-500">No products found</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {filteredProducts.map((product) => (
+              <ProductCard
+                key={product.id}
+                product={product}
+                onAddToCart={handleAddToCart}
+                cartQuantity={getCartQuantity(product.id)}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Bottom padding for main button */}
+      <div className="h-20"></div>
     </div>
-  );
+  )
 }

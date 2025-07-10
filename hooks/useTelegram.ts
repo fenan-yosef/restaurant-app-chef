@@ -9,14 +9,34 @@ export function useTelegram() {
     const [isLoading, setIsLoading] = useState(true)
 
     useEffect(() => {
-        const app = window.Telegram?.WebApp
-        if (app) {
-            app.ready()
-            app.expand()
-            setWebApp(app)
-            setUser(app.initDataUnsafe.user || null)
+        // Check if we're in Telegram environment
+        if (typeof window !== "undefined") {
+            // Wait for Telegram script to load
+            const checkTelegram = () => {
+                if (window.Telegram?.WebApp) {
+                    const app = window.Telegram.WebApp
+                    console.log("Telegram WebApp found:", app)
+
+                    app.ready()
+                    app.expand()
+
+                    setWebApp(app)
+                    setUser(app.initDataUnsafe.user || null)
+
+                    console.log("Telegram user:", app.initDataUnsafe.user)
+                    console.log("Init data:", app.initData)
+                } else {
+                    console.log("Telegram WebApp not found, retrying...")
+                    // Retry after a short delay
+                    setTimeout(checkTelegram, 100)
+                }
+                setIsLoading(false)
+            }
+
+            // Start checking immediately and also after a delay
+            checkTelegram()
+            setTimeout(checkTelegram, 500)
         }
-        setIsLoading(false)
     }, [])
 
     const showMainButton = (text: string, onClick: () => void) => {

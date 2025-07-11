@@ -26,10 +26,11 @@ export default function ProductCard({
     onPlaceOrder,
     cartQuantity = 0,
     highlightText,
-    className
-}: ProductCardProps & { style?: React.CSSProperties }) {
+    className,
+}: ProductCardProps) {
     const [isLiked, setIsLiked] = useState(false)
     const [imageLoaded, setImageLoaded] = useState(false)
+    const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false) // New state for description
     const { hapticFeedback } = useTelegram()
 
     const handleAddToCart = () => {
@@ -55,6 +56,9 @@ export default function ProductCard({
         }
         return text
     }
+
+    // Heuristic to determine if "See more" is needed
+    const needsSeeMore = (product.description?.length || 0) > 150 // Adjust character limit as needed
 
     return (
         <Card
@@ -165,10 +169,20 @@ export default function ProductCard({
                     <span className="text-sm text-gray-600 dark:text-gray-400 ml-1">(4.0)</span>
                 </div>
 
-                {/* Description Preview */}
-                <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-2">
+                {/* Description Preview with "See More" */}
+                <p className={cn("text-sm text-gray-600 dark:text-gray-400", !isDescriptionExpanded && "line-clamp-2")}>
                     {renderHighlightedText(product.description || "Delicious bakery item made with love and care.")}
                 </p>
+                {needsSeeMore && (
+                    <Button
+                        variant="link"
+                        size="sm"
+                        onClick={() => setIsDescriptionExpanded(!isDescriptionExpanded)}
+                        className="p-0 h-auto text-blue-600 dark:text-blue-400 hover:no-underline"
+                    >
+                        {isDescriptionExpanded ? "See less" : "See more"}
+                    </Button>
+                )}
             </CardContent>
 
             <CardFooter className="p-4 pt-0 space-y-3">
@@ -184,7 +198,7 @@ export default function ProductCard({
                     </Button>
                     <Button
                         onClick={handlePlaceOrder}
-                        className="flex-1 transition-all duration-200 hover:scale-105 bg-gradient-to-r text-white from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 dark:from-blue-500 dark:to-purple-500"
+                        className="flex-1 transition-all duration-200 hover:scale-105 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 dark:from-blue-500 dark:to-purple-500"
                     >
                         <Package className="h-4 w-4 mr-2" />
                         Order Now

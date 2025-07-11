@@ -1,26 +1,32 @@
 "use client"
 
 import type React from "react"
-
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import type { Product, CartItem } from "@/lib/types"
 import { useAuth } from "@/hooks/useAuth"
 import { useTelegram } from "@/hooks/useTelegram"
-import { useAdvancedSearch } from "@/hooks/useAdvancedSearch"
 import ProductCard from "@/components/ProductCard"
 import AdvancedSearch from "@/components/AdvancedSearch"
-import { ProductGridSkeleton } from "@/components/LoadingStates"
+import ProductGridSkeleton from "@/components/LoadingStates/ProductGridSkeleton" // Corrected import path
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { ShoppingCart, Clock, Sparkles, TrendingUp } from "lucide-react"
+import { ShoppingCart, Clock, Sparkles, TrendingUp, Shield } from "lucide-react" // Import Shield icon
 import { formatCurrency, toNumber } from "@/lib/utils"
 import { config } from "@/lib/config" // Ensure config is imported
+import { useAdvancedSearch } from "@/hooks/useAdvancedSearch" // Declare the useAdvancedSearch hook
 
 export default function Home() {
   const router = useRouter()
   const { user, isAuthenticated, isLoading: authLoading } = useAuth()
-  const { hapticFeedback, showMainButton, hideMainButton, webApp, user: telegramUser } = useTelegram() // Get webApp and telegramUser from useTelegram
+  const {
+    hapticFeedback,
+    showMainButton,
+    hideMainButton,
+    webApp,
+    user: telegramUser,
+    isLoading: telegramLoading,
+  } = useTelegram() // Get webApp and telegramUser from useTelegram
 
   const [allProducts, setAllProducts] = useState<Product[]>([])
   const [cartItems, setCartItems] = useState<CartItem[]>([])
@@ -151,7 +157,10 @@ export default function Home() {
     return cartItem ? cartItem.quantity : 0
   }
 
-  if (authLoading) {
+  const isAdmin = user && config.app.adminChatIds.includes(user.id)
+
+  // Show loading spinner while Telegram WebApp is initializing or auth is loading
+  if (telegramLoading || authLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center space-y-4">
@@ -162,7 +171,8 @@ export default function Home() {
     )
   }
 
-  if (!isAuthenticated) {
+  // Display "Please open in Telegram" if telegramUser is NOT detected
+  if (!telegramUser) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen p-4 text-center">
         <div className="space-y-6 max-w-md">
@@ -171,26 +181,6 @@ export default function Home() {
           <p className="text-gray-600 dark:text-gray-400 text-lg">
             Please open this app through Telegram to continue your delicious journey.
           </p>
-          {telegramUser && (
-            <div className="mt-4 flex flex-col items-center">
-              {telegramUser.photo_url ? (
-                <img
-                  src={telegramUser.photo_url}
-                  alt="Profile picture"
-                  className="w-16 h-16 rounded-full border border-gray-300"
-                />
-              ) : (
-                <div className="w-16 h-16 rounded-full bg-gray-200 flex items-center justify-center">
-                  <span className="text-xl font-bold text-gray-600">
-                    {telegramUser.first_name.charAt(0)}
-                  </span>
-                </div>
-              )}
-              <p className="mt-2 text-lg font-medium text-gray-700 dark:text-gray-300">
-                {telegramUser.first_name} {telegramUser.last_name || ""}
-              </p>
-            </div>
-          )}
           <div className="flex items-center justify-center space-x-2 text-sm text-gray-500">
             <Sparkles className="h-4 w-4" />
             <span>Fresh • Delicious • Delivered</span>
@@ -199,7 +189,7 @@ export default function Home() {
         </div>
         {config.ui.showDebugInfo && (
           <div className="fixed bottom-0 left-0 right-0 bg-red-800 text-white p-2 text-xs z-50 overflow-auto max-h-1/3">
-            <h3 className="font-bold mb-1">DEBUG INFO (Auth Failed)</h3>
+            <h3 className="font-bold mb-1">DEBUG INFO (Telegram WebApp Not Detected)</h3>
             <p>Is Telegram WebApp available: {String(!!webApp)}</p>
             <p>Telegram User (from WebApp): {telegramUser ? JSON.stringify(telegramUser) : "N/A"}</p>
             <p>WebApp InitData: {webApp?.initData || "N/A"}</p>
@@ -212,6 +202,41 @@ export default function Home() {
     )
   }
 
+  // If telegramUser is detected but server-side authentication failed (e.g., initData invalid)
+  // This means the user is in Telegram, but our backend couldn't validate them.
+  if (!isAuthenticated && !config.telegram.mockMode) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen p-4 text-center">
+        <div className="space-y-6 max-w-md">
+          <div className="text-6xl animate-bounce">⚠️</div>
+          <h1 className="text-3xl font-bold gradient-text">Authentication Failed</h1>
+          <p className="text-gray-600 dark:text-gray-400 text-lg">
+            We couldn't verify your Telegram session. Please ensure your bot is configured correctly in BotFather and
+            try again.
+          </p>
+          <div className="flex items-center justify-center space-x-2 text-sm text-gray-500">
+            <Sparkles className="h-4 w-4" />
+            <span>If the issue persists, contact support.</span>
+            <Sparkles className="h-4 w-4" />
+          </div>
+        </div>
+        {config.ui.showDebugInfo && (
+          <div className="fixed bottom-0 left-0 right-0 bg-red-800 text-white p-2 text-xs z-50 overflow-auto max-h-1/3">
+            <h3 className="font-bold mb-1">DEBUG INFO (Server Auth Failed)</h3>
+            <p>Is Telegram WebApp available: {String(!!webApp)}</p>
+            <p>Telegram User (from WebApp): {telegramUser ? JSON.stringify(telegramUser) : "N/A"}</p>
+            <p>WebApp InitData: {webApp?.initData || "N/A"}</p>
+            <p>WebApp InitDataUnsafe: {webApp?.initDataUnsafe ? JSON.stringify(webApp.initDataUnsafe) : "N/A"}</p>
+            <p>Config Mock Mode: {String(config.telegram.mockMode)}</p>
+            <p>Config Is Development: {String(config.app.isDevelopment)}</p>
+            <p>isAuthenticated: {String(isAuthenticated)}</p>
+          </div>
+        )}
+      </div>
+    )
+  }
+
+  // Main app content when authenticated
   return (
     <div className="min-h-screen">
       {/* Header */}
@@ -228,6 +253,17 @@ export default function Home() {
               </p>
             </div>
             <div className="flex space-x-2">
+              {isAdmin && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => router.push("/admin")}
+                  className="transition-all duration-200 hover:scale-105 glass"
+                >
+                  <Shield className="h-4 w-4 mr-1" />
+                  Admin
+                </Button>
+              )}
               <Button
                 variant="outline"
                 size="sm"
@@ -326,7 +362,7 @@ export default function Home() {
                     onAddToCart={handleAddToCart}
                     onPlaceOrder={handlePlaceOrder}
                     cartQuantity={getCartQuantity(product.id)}
-                    highlightText={filters.query ? (text) => highlightText(text, filters.query) : undefined}
+                    highlightText={filters.query ? ((text: string) => highlightText(text, filters.query)) : undefined}
                     className={`animate-fade-in`}
                     style={{ animationDelay: `${index * 0.1}s` } as React.CSSProperties}
                   />

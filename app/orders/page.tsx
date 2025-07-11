@@ -53,7 +53,7 @@ export default function OrdersPage() {
 
     if (orders.length === 0) {
         return (
-            <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4">
+            <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4">
                 <Package className="h-16 w-16 text-gray-400 mb-4" />
                 <h2 className="text-xl font-semibold mb-2">No orders yet</h2>
                 <p className="text-gray-600 text-center mb-6">
@@ -68,9 +68,9 @@ export default function OrdersPage() {
     }
 
     return (
-        <div className="min-h-screen bg-gray-50">
+        <div className="min-h-screen bg-background">
             {/* Header */}
-            <div className="bg-white shadow-sm border-b sticky top-0 z-10">
+            <div className="bg-background shadow-sm border-b sticky top-0 z-10">
                 <div className="px-4 py-3">
                     <h1 className="text-xl font-bold">📦 Your Orders</h1>
                     <p className="text-sm text-gray-600">

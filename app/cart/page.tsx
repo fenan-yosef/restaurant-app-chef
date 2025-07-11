@@ -70,7 +70,7 @@ export default function OrdersPage() {
     return (
         <div className="min-h-screen bg-background">
             {/* Header */}
-            <div className="bg-white shadow-sm border-b sticky top-0 z-10">
+            <div className="bg-background shadow-sm border-b sticky top-0 z-10">
                 <div className="px-4 py-3">
                     <h1 className="text-xl font-bold">📦 Your Orders</h1>
                     <p className="text-sm text-gray-600">

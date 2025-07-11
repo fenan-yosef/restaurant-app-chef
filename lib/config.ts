@@ -16,6 +16,7 @@ export interface AppConfig {
         url: string
         isDevelopment: boolean
         isProduction: boolean
+        adminChatIds: number[] // Added for admin access control
     }
     api: {
         baseUrl: string
@@ -61,6 +62,7 @@ const developmentConfig: Partial<AppConfig> = {
         url: "http://localhost:3000",
         isDevelopment: true,
         isProduction: false,
+        adminChatIds: [856048902], // !!! REPLACE with your actual Telegram Chat ID for local admin
     },
     api: {
         baseUrl: "http://localhost:3000/api",
@@ -99,6 +101,7 @@ const productionConfig: Partial<AppConfig> = {
         url: process.env.NEXT_PUBLIC_APP_URL || "https://your-app.vercel.app",
         isDevelopment: false,
         isProduction: true,
+        adminChatIds: [856048902], // !!! REPLACE with your actual Telegram Chat ID(s) for production admin
     },
     api: {
         baseUrl: `${process.env.NEXT_PUBLIC_APP_URL || "https://your-app.vercel.app"}/api`,
@@ -136,6 +139,7 @@ const baseConfig: AppConfig = {
         url: "",
         isDevelopment: false,
         isProduction: false,
+        adminChatIds: [], // Default empty list
     },
     api: {
         baseUrl: "/api",
@@ -176,7 +180,7 @@ function createConfig(): AppConfig {
     return {
         ...baseConfig,
         ...envConfig,
-        app: { ...baseConfig.app, ...envConfig.app },
+        app: { ...baseConfig.app, ...envConfig.app, adminChatIds: envConfig.app?.adminChatIds || [] }, // Merge adminChatIds
         api: { ...baseConfig.api, ...envConfig.api },
         database: { ...baseConfig.database },
         telegram: { ...baseConfig.telegram, ...envConfig.telegram },
@@ -227,6 +231,7 @@ export function logConfig() {
         console.log("API Base URL:", config.api.baseUrl)
         console.log("Telegram Mock Mode:", config.telegram.mockMode)
         console.log("Features:", config.features)
+        console.log("Admin Chat IDs:", config.app.adminChatIds) // Log admin IDs
         console.groupEnd()
     }
 }

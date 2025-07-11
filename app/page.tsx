@@ -171,6 +171,26 @@ export default function Home() {
           <p className="text-gray-600 dark:text-gray-400 text-lg">
             Please open this app through Telegram to continue your delicious journey.
           </p>
+          {telegramUser && (
+            <div className="mt-4 flex flex-col items-center">
+              {telegramUser.photo_url ? (
+                <img
+                  src={telegramUser.photo_url}
+                  alt="Profile picture"
+                  className="w-16 h-16 rounded-full border border-gray-300"
+                />
+              ) : (
+                <div className="w-16 h-16 rounded-full bg-gray-200 flex items-center justify-center">
+                  <span className="text-xl font-bold text-gray-600">
+                    {telegramUser.first_name.charAt(0)}
+                  </span>
+                </div>
+              )}
+              <p className="mt-2 text-lg font-medium text-gray-700 dark:text-gray-300">
+                {telegramUser.first_name} {telegramUser.last_name || ""}
+              </p>
+            </div>
+          )}
           <div className="flex items-center justify-center space-x-2 text-sm text-gray-500">
             <Sparkles className="h-4 w-4" />
             <span>Fresh • Delicious • Delivered</span>

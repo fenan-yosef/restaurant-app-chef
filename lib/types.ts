@@ -1,4 +1,5 @@
 export interface TelegramUser {
+    photo_url: string | Blob | undefined
     id: number
     first_name: string
     last_name?: string

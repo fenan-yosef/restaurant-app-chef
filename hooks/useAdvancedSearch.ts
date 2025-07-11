@@ -132,6 +132,12 @@ export function useAdvancedSearch({ products, initialFilters = {} }: UseAdvanced
     const clearFilters = () => {
         setFilters({
             query: "",
+            category: undefined, // Explicitly clear category
+            design: undefined, // Explicitly clear design
+            flavor: undefined, // Explicitly clear flavor
+            occasion: undefined, // Explicitly clear occasion
+            size: undefined, // Explicitly clear size
+            priceRange: undefined, // Explicitly clear price range
             sortBy: "created_at",
             sortOrder: "desc",
         })

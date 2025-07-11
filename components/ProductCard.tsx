@@ -184,7 +184,7 @@ export default function ProductCard({
                     </Button>
                     <Button
                         onClick={handlePlaceOrder}
-                        className="flex-1 transition-all duration-200 hover:scale-105 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 dark:from-blue-500 dark:to-purple-500"
+                        className="flex-1 transition-all duration-200 hover:scale-105 bg-gradient-to-r text-white from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 dark:from-blue-500 dark:to-purple-500"
                     >
                         <Package className="h-4 w-4 mr-2" />
                         Order Now

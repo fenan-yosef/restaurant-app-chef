@@ -81,22 +81,25 @@ export default function AdvancedSearch({
                 )}
             </div>
 
-            {/* Quick Filters */}
+            {/* Quick Category Tabs */}
             {availableFilters.categories.length > 0 && (
                 <div className="bg-white dark:bg-gray-800 rounded-lg border dark:border-gray-700 p-4 shadow-sm">
                     <Tabs
                         value={filters.category || "all"}
                         onValueChange={(value) => handleFilterChange("category", value === "all" ? "" : value)}
                     >
-                        <TabsList className="grid w-full grid-cols-auto overflow-x-auto bg-gray-100 dark:bg-gray-700">
-                            <TabsTrigger value="all" className="data-[state=active]:bg-white dark:data-[state=active]:bg-gray-600">
+                        <TabsList className="flex flex-nowrap overflow-x-auto scrollbar-hide bg-gray-100 dark:bg-gray-700 p-1 rounded-full">
+                            <TabsTrigger
+                                value="all"
+                                className="flex-shrink-0 rounded-full px-4 py-2 text-sm font-medium transition-colors data-[state=active]:bg-blue-500 data-[state=active]:text-white data-[state=active]:shadow-md hover:bg-blue-100 dark:hover:bg-gray-600 dark:data-[state=active]:bg-blue-700"
+                            >
                                 All
                             </TabsTrigger>
-                            {availableFilters.categories.slice(0, 5).map((category) => (
+                            {availableFilters.categories.map((category) => (
                                 <TabsTrigger
                                     key={category}
                                     value={category}
-                                    className="data-[state=active]:bg-white dark:data-[state=active]:bg-gray-600"
+                                    className="flex-shrink-0 rounded-full px-4 py-2 text-sm font-medium transition-colors data-[state=active]:bg-blue-500 data-[state=active]:text-white data-[state=active]:shadow-md hover:bg-blue-100 dark:hover:bg-gray-600 dark:data-[state=active]:bg-blue-700"
                                 >
                                     {category}
                                 </TabsTrigger>

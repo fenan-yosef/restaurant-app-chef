@@ -159,7 +159,9 @@ export default function Home() {
   }
 
   const isAdmin = user && config.app.adminChatIds.includes(user.id)
-
+  console.log("============")
+  console.log("USER", user)
+  console.log("ADMIN ID", config.app.adminChatIds.includes(user.id))
   // --- DEBUGGING LOGS FOR HOME PAGE ---
   if (config.ui.showDebugInfo) {
     console.log("--- HomePage Debug ---")

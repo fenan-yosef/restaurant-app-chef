@@ -45,7 +45,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         if (!isAdmin) {
             telegramLogger.warn(`Admin access denied: User ID ${user.id} is not in admin list.`, "AdminLayout")
             // Redirect to home or show an access denied page
-            router.replace("/")
+            // router.replace("/")
         }
     }, [isLoading, isAuthenticated, user, router])
 

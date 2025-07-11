@@ -2,7 +2,9 @@ import type React from "react"
 import type { Metadata } from "next"
 import { Geist, Geist_Mono } from "next/font/google"
 import "./globals.css"
-import Script from "next/script"
+import TelegramScript from "@/components/TelegramScript"
+import { ThemeProvider } from "@/components/ThemeProvider"
+import { config } from "@/lib/config"
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -15,8 +17,10 @@ const geistMono = Geist_Mono({
 })
 
 export const metadata: Metadata = {
-  title: "Artisan Bakery - Telegram Mini App",
-  description: "Fresh bakery products delivered to your door",
+  title: config.app.name,
+  description: "Fresh bakery products delivered to your door with advanced search and modern UI",
+  keywords: ["bakery", "cakes", "pastries", "delivery", "telegram", "mini app"],
+  authors: [{ name: "Chef Figoz Bakery" }],
 }
 
 export default function RootLayout({
@@ -25,17 +29,13 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en">
-      <head>
-        <Script
-          src="https://telegram.org/js/telegram-web-app.js"
-          strategy="beforeInteractive"
-          onLoad={() => {
-            console.log("Telegram Web App script loaded")
-          }}
-        />
-      </head>
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>{children}</body>
+    <html lang="en" suppressHydrationWarning>
+      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+        <ThemeProvider>
+          <TelegramScript />
+          {children}
+        </ThemeProvider>
+      </body>
     </html>
   )
 }

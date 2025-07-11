@@ -5,6 +5,7 @@ import "./globals.css"
 import TelegramScript from "@/components/TelegramScript"
 import { ThemeProvider } from "@/components/ThemeProvider"
 import { config } from "@/lib/config"
+import { telegramLogger } from "@/lib/telegram-logger" // Import the logger
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -28,6 +29,9 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode
 }>) {
+  // Log app startup
+  telegramLogger.info("Application RootLayout initialized", "AppStartup")
+
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>

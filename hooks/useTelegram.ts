@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react"
 import type { TelegramWebApp, TelegramUser } from "@/lib/types"
+import { telegramLogger } from "@/lib/telegram-logger" // Import the logger
 
 export function useTelegram() {
     const [webApp, setWebApp] = useState<TelegramWebApp | null>(null)
@@ -9,13 +10,16 @@ export function useTelegram() {
     const [isLoading, setIsLoading] = useState(true)
 
     useEffect(() => {
+        telegramLogger.debug("useTelegram hook mounted", "useTelegram")
+
         // Check if we're in Telegram environment
         if (typeof window !== "undefined") {
-            // Wait for Telegram script to load
+            telegramLogger.debug("Window object available, checking for Telegram WebApp...", "useTelegram")
+
             const checkTelegram = () => {
                 if (window.Telegram?.WebApp) {
                     const app = window.Telegram.WebApp
-                    console.log("Telegram WebApp found:", app)
+                    telegramLogger.info("Telegram WebApp found and ready.", "useTelegram")
 
                     app.ready()
                     app.expand()
@@ -23,10 +27,13 @@ export function useTelegram() {
                     setWebApp(app)
                     setUser(app.initDataUnsafe.user || null)
 
-                    console.log("Telegram user:", app.initDataUnsafe.user)
-                    console.log("Init data:", app.initData)
+                    telegramLogger.debug(`Telegram user: ${JSON.stringify(app.initDataUnsafe.user)}`, "useTelegram")
+                    telegramLogger.debug(`Init data: ${app.initData ? "Present" : "Missing"}`, "useTelegram")
+                    if (!app.initData) {
+                        telegramLogger.warn("Telegram WebApp initData is missing!", "useTelegram")
+                    }
                 } else {
-                    console.log("Telegram WebApp not found, retrying...")
+                    telegramLogger.debug("Telegram WebApp not found, retrying...", "useTelegram")
                     // Retry after a short delay
                     setTimeout(checkTelegram, 100)
                 }
@@ -36,6 +43,12 @@ export function useTelegram() {
             // Start checking immediately and also after a delay
             checkTelegram()
             setTimeout(checkTelegram, 500)
+        } else {
+            telegramLogger.warn(
+                "Window object not available (server-side render?), skipping Telegram WebApp check.",
+                "useTelegram",
+            )
+            setIsLoading(false)
         }
     }, [])
 
@@ -44,22 +57,26 @@ export function useTelegram() {
             webApp.MainButton.setText(text)
             webApp.MainButton.onClick(onClick)
             webApp.MainButton.show()
+            telegramLogger.debug(`MainButton shown: ${text}`, "useTelegram")
         }
     }
 
     const hideMainButton = () => {
         webApp?.MainButton.hide()
+        telegramLogger.debug("MainButton hidden", "useTelegram")
     }
 
     const showBackButton = (onClick: () => void) => {
         if (webApp?.BackButton) {
             webApp.BackButton.onClick(onClick)
             webApp.BackButton.show()
+            telegramLogger.debug("BackButton shown", "useTelegram")
         }
     }
 
     const hideBackButton = () => {
         webApp?.BackButton.hide()
+        telegramLogger.debug("BackButton hidden", "useTelegram")
     }
 
     const hapticFeedback = (type: "light" | "medium" | "heavy" | "success" | "error" | "warning") => {
@@ -69,11 +86,13 @@ export function useTelegram() {
             } else {
                 webApp.HapticFeedback.impactOccurred(type as "light" | "medium" | "heavy")
             }
+            telegramLogger.debug(`Haptic feedback: ${type}`, "useTelegram")
         }
     }
 
     const close = () => {
         webApp?.close()
+        telegramLogger.info("Telegram WebApp closed", "useTelegram")
     }
 
     return {

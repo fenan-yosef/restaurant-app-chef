@@ -38,12 +38,13 @@ export interface AppConfig {
             username?: string
             language_code?: string
         }
+        logChatId?: string // Added for Telegram logging
     }
     features: {
         enableAuth: boolean
         enablePayments: boolean
         enableAnalytics: boolean
-        enableLogging: boolean
+        enableLogging: boolean // Added for logging control
     }
     ui: {
         theme: "light" | "dark" | "auto"
@@ -76,12 +77,13 @@ const developmentConfig: Partial<AppConfig> = {
             username: "testuser",
             language_code: "en",
         },
+        logChatId: process.env.TELEGRAM_LOG_CHAT_ID, // Use env var for dev logs
     },
     features: {
         enableAuth: true,
         enablePayments: false,
         enableAnalytics: false,
-        enableLogging: true,
+        enableLogging: true, // Enable logging in dev by default
     },
     ui: {
         theme: "light",
@@ -111,12 +113,13 @@ const productionConfig: Partial<AppConfig> = {
             id: 0,
             first_name: "",
         },
+        logChatId: process.env.TELEGRAM_LOG_CHAT_ID, // Use env var for prod logs
     },
     features: {
         enableAuth: true,
         enablePayments: true,
         enableAnalytics: true,
-        enableLogging: false,
+        enableLogging: false, // Disable logging in prod by default, enable only for debugging
     },
     ui: {
         theme: "auto",

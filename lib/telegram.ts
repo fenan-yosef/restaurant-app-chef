@@ -1,9 +1,11 @@
 import crypto from "crypto"
+import { telegramLogger } from "./telegram-logger" // Import the logger
 
 export function validateTelegramWebAppData(initData: string, botToken: string): boolean {
+    telegramLogger.debug("Starting Telegram WebApp data validation...", "validateTelegramWebAppData")
     try {
         if (!initData || !botToken) {
-            console.log("Missing initData or botToken")
+            telegramLogger.warn("Missing initData or botToken for validation.", "validateTelegramWebAppData")
             return false
         }
 
@@ -11,7 +13,7 @@ export function validateTelegramWebAppData(initData: string, botToken: string): 
         const hash = urlParams.get("hash")
 
         if (!hash) {
-            console.log("No hash found in initData")
+            telegramLogger.warn("No hash found in initData for validation.", "validateTelegramWebAppData")
             return false
         }
 
@@ -26,26 +28,36 @@ export function validateTelegramWebAppData(initData: string, botToken: string): 
         const calculatedHash = crypto.createHmac("sha256", secretKey).update(dataCheckString).digest("hex")
 
         const isValid = calculatedHash === hash
-        console.log("Validation result:", isValid)
+        telegramLogger.info(`Telegram WebApp data validation result: ${isValid}`, "validateTelegramWebAppData")
+        if (!isValid) {
+            telegramLogger.error(
+                `Validation failed. Calculated hash: ${calculatedHash}, Provided hash: ${hash}`,
+                "validateTelegramWebAppData",
+            )
+        }
         return isValid
-    } catch (error) {
-        console.error("Validation error:", error)
+    } catch (error: any) {
+        telegramLogger.error(`Validation error: ${error.message}`, "validateTelegramWebAppData")
         return false
     }
 }
 
 export function parseTelegramInitData(initData: string) {
+    telegramLogger.debug("Parsing Telegram initData...", "parseTelegramInitData")
     try {
         const urlParams = new URLSearchParams(initData)
         const user = urlParams.get("user")
 
         if (user) {
-            return JSON.parse(decodeURIComponent(user))
+            const userData = JSON.parse(decodeURIComponent(user))
+            telegramLogger.debug(`Parsed user data: ${JSON.stringify(userData)}`, "parseTelegramInitData")
+            return userData
         }
 
+        telegramLogger.warn("No user data found in initData.", "parseTelegramInitData")
         return null
-    } catch (error) {
-        console.error("Parse error:", error)
+    } catch (error: any) {
+        telegramLogger.error(`Error parsing initData: ${error.message}`, "parseTelegramInitData")
         return null
     }
 }

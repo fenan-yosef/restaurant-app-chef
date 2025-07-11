@@ -83,7 +83,7 @@ const developmentConfig: Partial<AppConfig> = {
         enableAuth: true,
         enablePayments: false,
         enableAnalytics: false,
-        enableLogging: true, // Enable logging in dev by default
+        enableLogging: false
     },
     ui: {
         theme: "light",
@@ -119,7 +119,7 @@ const productionConfig: Partial<AppConfig> = {
         enableAuth: true,
         enablePayments: true,
         enableAnalytics: true,
-        enableLogging: false, // Disable logging in prod by default, enable only for debugging
+        enableLogging: false
     },
     ui: {
         theme: "auto",
@@ -159,7 +159,7 @@ const baseConfig: AppConfig = {
         enableAuth: true,
         enablePayments: false,
         enableAnalytics: false,
-        enableLogging: false,
+        enableLogging: process.env.NEXT_PUBLIC_ENABLE_LOGGING === "true", // Directly controlled by NEXT_PUBLIC_ENABLE_LOGGING
     },
     ui: {
         theme: "auto",
@@ -180,7 +180,12 @@ function createConfig(): AppConfig {
         api: { ...baseConfig.api, ...envConfig.api },
         database: { ...baseConfig.database },
         telegram: { ...baseConfig.telegram, ...envConfig.telegram },
-        features: { ...baseConfig.features, ...envConfig.features },
+        // Merge features separately to ensure NEXT_PUBLIC_ENABLE_LOGGING takes precedence
+        features: {
+            ...baseConfig.features,
+            ...envConfig.features,
+            enableLogging: process.env.NEXT_PUBLIC_ENABLE_LOGGING === "true",
+        },
         ui: { ...baseConfig.ui, ...envConfig.ui },
     }
 }

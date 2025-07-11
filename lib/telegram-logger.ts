@@ -13,8 +13,9 @@ class TelegramLogger {
     private isEnabled: boolean
 
     constructor() {
+        // Use values from the resolved config object
         this.botToken = config.telegram.botToken
-        this.chatId = process.env.TELEGRAM_LOG_CHAT_ID // This needs to be set in your environment variables
+        this.chatId = config.telegram.logChatId
         this.isEnabled = config.features.enableLogging && !!this.botToken && !!this.chatId
 
         if (!this.isEnabled && config.ui.showDebugInfo) {
@@ -22,33 +23,48 @@ class TelegramLogger {
         }
     }
 
+    /**
+     * Sends the already-formatted message either
+     *   • directly to Telegram (server / Node runtime)
+     *   • or through our /api/telegram-log proxy (browser)
+     */
     private async sendToTelegram(message: string) {
-        if (!this.isEnabled) {
+        if (!this.isEnabled) return
+
+        // ---------- 1. Running on the SERVER ----------
+        if (typeof window === "undefined") {
+            const url = `https://api.telegram.org/bot${this.botToken}/sendMessage`
+            try {
+                const res = await fetch(url, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        chat_id: this.chatId,
+                        text: message,
+                        parse_mode: "MarkdownV2",
+                    }),
+                })
+
+                if (!res.ok) {
+                    const data = await res.json()
+                    console.error("Failed to send log to Telegram (server):", res.status, data)
+                }
+            } catch (err) {
+                console.error("Server-side Telegram log error:", err)
+            }
             return
         }
 
-        const url = `https://api.telegram.org/bot${this.botToken}/sendMessage`
-        const payload = {
-            chat_id: this.chatId,
-            text: message,
-            parse_mode: "MarkdownV2", // Use MarkdownV2 for better formatting
-        }
-
+        // ---------- 2. Running in the BROWSER ----------
         try {
-            const response = await fetch(url, {
+            await fetch("/api/telegram-log", {
                 method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify(payload),
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ text: message }),
+                // no-cors not needed because same-origin
             })
-
-            if (!response.ok) {
-                const errorData = await response.json()
-                console.error("Failed to send log to Telegram:", response.status, errorData)
-            }
-        } catch (error) {
-            console.error("Network error sending log to Telegram:", error)
+        } catch (err) {
+            console.error("Client-side proxy log error:", err)
         }
     }
 
@@ -67,7 +83,7 @@ class TelegramLogger {
         }
 
         const escapedMessage = escapeMarkdownV2(message)
-        const escapedContext = context ? ` \$$${escapeMarkdownV2(context)}\$$` : ""
+        const escapedContext = context ? ` \$$${escapeMarkdownV2(context)}\$$` : "" // Escaped parentheses
 
         return `\`${timestamp}\` ${levelEmoji} *${level.toUpperCase()}*${escapedContext}: ${escapedMessage}`
     }

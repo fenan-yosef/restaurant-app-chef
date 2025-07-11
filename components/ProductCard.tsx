@@ -49,6 +49,8 @@ export default function ProductCard({
     }
 
     const imageUrl = getImageUrl(product.photos)
+    console.log('++++++++++++')
+    console.log(imageUrl)
 
     const renderHighlightedText = (text: string) => {
         if (highlightText) {

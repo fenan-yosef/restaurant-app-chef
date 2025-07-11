@@ -29,8 +29,17 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode
 }>) {
-  // Log app startup
+  // Log app startup and initial config status (server-side)
   telegramLogger.info("Application RootLayout initialized", "AppStartup")
+  telegramLogger.debug(`Server-side config.features.enableLogging: ${config.features.enableLogging}`, "AppStartup")
+  telegramLogger.debug(
+    `Server-side config.telegram.logChatId: ${config.telegram.logChatId ? "Present" : "Missing"}`,
+    "AppStartup",
+  )
+  telegramLogger.debug(
+    `Server-side config.telegram.botToken: ${config.telegram.botToken ? "Present" : "Missing"}`,
+    "AppStartup",
+  )
 
   return (
     <html lang="en" suppressHydrationWarning>

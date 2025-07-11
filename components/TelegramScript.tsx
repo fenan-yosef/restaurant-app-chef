@@ -10,6 +10,11 @@ export default function TelegramScript() {
         logConfig()
         telegramLogger.debug(`Telegram logging enabled: ${config.features.enableLogging}`, "TelegramScript")
         telegramLogger.debug(`Debug info enabled: ${config.ui.showDebugInfo}`, "TelegramScript")
+        telegramLogger.debug(`Client-side telegramLogger.isEnabled: ${telegramLogger["isEnabled"]}`, "TelegramScript") // Access private property for debug
+        telegramLogger.debug(
+            `Client-side config.telegram.logChatId: ${config.telegram.logChatId ? "Present" : "Missing"}`,
+            "TelegramScript",
+        )
 
         // Load Telegram Web App script
         const script = document.createElement("script")

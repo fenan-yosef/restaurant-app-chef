@@ -62,7 +62,7 @@ const developmentConfig: Partial<AppConfig> = {
         url: "http://localhost:3000",
         isDevelopment: true,
         isProduction: false,
-        adminChatIds: [856048902], // !!! REPLACE with your actual Telegram Chat ID for local admin
+        adminChatIds: [856048902, 652162568], // !!! REPLACE with your actual Telegram Chat ID for local admin
     },
     api: {
         baseUrl: "http://localhost:3000/api",
@@ -101,7 +101,7 @@ const productionConfig: Partial<AppConfig> = {
         url: process.env.NEXT_PUBLIC_APP_URL || "https://your-app.vercel.app",
         isDevelopment: false,
         isProduction: true,
-        adminChatIds: [856048902], // !!! REPLACE with your actual Telegram Chat ID(s) for production admin
+        adminChatIds: [856048902, 652162568], // !!! REPLACE with your actual Telegram Chat ID(s) for production admin
     },
     api: {
         baseUrl: `${process.env.NEXT_PUBLIC_APP_URL || "https://your-app.vercel.app"}/api`,

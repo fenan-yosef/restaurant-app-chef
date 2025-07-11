@@ -1,45 +1,124 @@
 import { type NextRequest, NextResponse } from "next/server"
+import pool from "@/lib/database"
+import { validateTelegramWebAppData, parseTelegramInitData } from "@/lib/telegram"
+import { telegramLogger } from "@/lib/telegram-logger" // Import the logger
 import { config } from "@/lib/config"
 
-/**
- * POST /api/telegram-log
- * Body: { text: string }
- *
- * Proxies the message to the Telegram Bot API from the **server** so that
- * the browser never talks to Telegram directly (avoids CORS).
- */
-export async function POST(req: NextRequest) {
+export async function POST(request: NextRequest) {
+    telegramLogger.info("Auth request received", "api/auth/telegram")
     try {
-        const { text } = (await req.json()) as { text?: string }
+        const { initData } = await request.json()
 
-        if (!text) {
-            return NextResponse.json({ error: "Missing text" }, { status: 400 })
+        telegramLogger.debug(`Received initData: ${initData || "EMPTY"}`, "api/auth/telegram")
+        telegramLogger.debug(`InitData received: ${initData ? "Present" : "Missing"}`, "api/auth/telegram")
+
+        if (!initData) {
+            telegramLogger.warn("No initData provided in auth request.", "api/auth/telegram")
+            return NextResponse.json({ error: "Missing initData" }, { status: 400 })
         }
 
-        const botToken = config.telegram.botToken
-        const chatId = config.telegram.logChatId
+        // In development, skip validation
+        if (config.app.isDevelopment) {
+            const botToken = process.env.TELEGRAM_BOT_TOKEN
+            telegramLogger.debug(
+                `Development mode: Skipping initData validation. Bot Token: ${botToken ? "Present" : "Missing"}`,
+                "api/auth/telegram",
+            )
+            telegramLogger.warn("Development mode detected - skipping Telegram initData validation.", "api/auth/telegram")
 
-        if (!botToken || !chatId) {
-            return NextResponse.json({ error: "Telegram logging not configured" }, { status: 500 })
+            const userData = parseTelegramInitData(initData)
+            if (!userData) {
+                telegramLogger.error("Failed to parse user data in development mode.", "api/auth/telegram")
+                return NextResponse.json({ error: "Invalid user data" }, { status: 400 })
+            }
+
+            // Create/update user in database
+            const query = `
+        INSERT INTO users (id, first_name, last_name, username, language_code, is_premium, updated_at)
+        VALUES ($1, $2, $3, $4, $5, $6, CURRENT_TIMESTAMP)
+        ON CONFLICT (id) 
+        DO UPDATE SET 
+          first_name = EXCLUDED.first_name,
+          last_name = EXCLUDED.last_name,
+          username = EXCLUDED.username,
+          language_code = EXCLUDED.language_code,
+          is_premium = EXCLUDED.is_premium,
+          updated_at = CURRENT_TIMESTAMP
+        RETURNING *
+      `
+
+            const values = [
+                userData.id,
+                userData.first_name,
+                userData.last_name || null,
+                userData.username || null,
+                userData.language_code || null,
+                userData.is_premium || false,
+            ]
+
+            const result = await pool.query(query, values)
+            const user = result.rows[0]
+
+            telegramLogger.info(`User authenticated (dev mode): ${user.id}`, "api/auth/telegram")
+            return NextResponse.json({ user, success: true })
         }
 
-        const tgRes = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                chat_id: chatId,
-                text,
-                parse_mode: "MarkdownV2",
-            }),
-        })
-
-        if (!tgRes.ok) {
-            const data = await tgRes.json()
-            return NextResponse.json({ error: data }, { status: tgRes.status })
+        // Production validation
+        const botToken = process.env.TELEGRAM_BOT_TOKEN
+        if (!botToken) {
+            telegramLogger.error("TELEGRAM_BOT_TOKEN is not configured in production environment.", "api/auth/telegram")
+            return NextResponse.json({ error: "Bot token not configured" }, { status: 500 })
         }
 
-        return NextResponse.json({ ok: true })
-    } catch (err: any) {
-        return NextResponse.json({ error: err.message }, { status: 500 })
+        telegramLogger.debug(
+            `Production mode: Attempting initData validation. Bot Token: ${botToken ? "Present" : "Missing"}`,
+            "api/auth/telegram",
+        )
+        // Validate Telegram data
+        const isValid = validateTelegramWebAppData(initData, botToken)
+        if (!isValid) {
+            telegramLogger.error("Invalid Telegram data received during authentication.", "api/auth/telegram")
+            return NextResponse.json({ error: "Invalid Telegram data" }, { status: 401 })
+        }
+
+        // Parse user data
+        const userData = parseTelegramInitData(initData)
+        if (!userData) {
+            telegramLogger.error("Could not parse user data from valid initData.", "api/auth/telegram")
+            return NextResponse.json({ error: "Invalid user data" }, { status: 400 })
+        }
+
+        // Upsert user in database
+        const query = `
+      INSERT INTO users (id, first_name, last_name, username, language_code, is_premium, updated_at)
+      VALUES ($1, $2, $3, $4, $5, $6, CURRENT_TIMESTAMP)
+      ON CONFLICT (id) 
+      DO UPDATE SET 
+        first_name = EXCLUDED.first_name,
+        last_name = EXCLUDED.last_name,
+        username = EXCLUDED.username,
+        language_code = EXCLUDED.language_code,
+        is_premium = EXCLUDED.is_premium,
+        updated_at = CURRENT_TIMESTAMP
+      RETURNING *
+    `
+
+        const values = [
+            userData.id,
+            userData.first_name,
+            userData.last_name || null,
+            userData.username || null,
+            userData.language_code || null,
+            userData.is_premium || false,
+        ]
+
+        const result = await pool.query(query, values)
+        const user = result.rows[0]
+
+        telegramLogger.info(`User authenticated successfully: ${user.id}`, "api/auth/telegram")
+        return NextResponse.json({ user, success: true })
+    } catch (error: any) {
+        telegramLogger.error(`Authentication failed: ${error.message}`, "api/auth/telegram")
+        return NextResponse.json({ error: "Authentication failed" }, { status: 500 })
     }
 }

@@ -19,13 +19,21 @@ export function validateTelegramWebAppData(initData: string, botToken: string): 
 
         urlParams.delete("hash")
 
+        const secretKey = crypto.createHmac("sha256", "WebAppData").update(botToken).digest()
+
         const dataCheckString = Array.from(urlParams.entries())
             .sort(([a], [b]) => a.localeCompare(b))
             .map(([key, value]) => `${key}=${value}`)
             .join("\n")
 
-        const secretKey = crypto.createHmac("sha256", "WebAppData").update(botToken).digest()
+        // Add these lines to log the intermediate values for debugging validation
+        telegramLogger.debug(`Validation dataCheckString: ${dataCheckString}`, "validateTelegramWebAppData")
+        telegramLogger.debug(`Validation secretKey (hex): ${secretKey.toString("hex")}`, "validateTelegramWebAppData")
+
         const calculatedHash = crypto.createHmac("sha256", secretKey).update(dataCheckString).digest("hex")
+
+        telegramLogger.debug(`Validation calculatedHash: ${calculatedHash}`, "validateTelegramWebAppData")
+        telegramLogger.debug(`Validation provided hash: ${hash}`, "validateTelegramWebAppData")
 
         const isValid = calculatedHash === hash
         telegramLogger.info(`Telegram WebApp data validation result: ${isValid}`, "validateTelegramWebAppData")

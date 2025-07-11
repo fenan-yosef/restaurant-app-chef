@@ -8,13 +8,13 @@
 import type { Product, CartItem, Order, TelegramUser } from "@/lib/types"
 
 export const mockUser: TelegramUser = {
-    photo_url: "",
     id: 12345,
     first_name: "John",
     last_name: "Doe",
     username: "johndoe",
     language_code: "en",
     is_premium: false,
+    photo_url: undefined
 }
 
 export const mockProducts: Product[] = [
@@ -28,6 +28,7 @@ export const mockProducts: Product[] = [
         photos: ["/placeholder.svg?height=300&width=300"],
         videos: [],
         is_available: true,
+        stock: 100, // <-- Added stock property
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
     },
@@ -40,6 +41,7 @@ export const mockProducts: Product[] = [
         photos: ["/placeholder.svg?height=300&width=300"],
         videos: [],
         is_available: true,
+        stock: 50, // <-- Added
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
     },
@@ -52,6 +54,7 @@ export const mockProducts: Product[] = [
         photos: ["/placeholder.svg?height=300&width=300"],
         videos: [],
         is_available: true,
+        stock: 30, // <-- Added
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
     },
@@ -64,6 +67,7 @@ export const mockProducts: Product[] = [
         photos: ["/placeholder.svg?height=300&width=300"],
         videos: [],
         is_available: true,
+        stock: 20, // <-- Added
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
     },
@@ -76,6 +80,7 @@ export const mockProducts: Product[] = [
         photos: ["/placeholder.svg?height=300&width=300"],
         videos: [],
         is_available: true,
+        stock: 40, // <-- Added
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
     },
@@ -87,6 +92,7 @@ export const mockProducts: Product[] = [
         category: "Bread",
         photos: ["/placeholder.svg?height=300&width=300"],
         videos: [],
+        stock: 40, // <-- Added
         is_available: true,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),

@@ -8,7 +8,8 @@ import { useAuth } from "@/hooks/useAuth"
 import { useTelegram } from "@/hooks/useTelegram"
 import ProductCard from "@/components/ProductCard"
 import AdvancedSearch from "@/components/AdvancedSearch"
-import ProductGridSkeleton from "@/components/LoadingStates/ProductGridSkeleton" // Corrected import path
+import ProductGridSkeleton from "@/components/LoadingStates/ProductGridSkeleton"
+
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { ShoppingCart, Clock, Sparkles, TrendingUp, Shield } from "lucide-react" // Import Shield icon
@@ -159,6 +160,19 @@ export default function Home() {
 
   const isAdmin = user && config.app.adminChatIds.includes(user.id)
 
+  // --- DEBUGGING LOGS FOR HOME PAGE ---
+  if (config.ui.showDebugInfo) {
+    console.log("--- HomePage Debug ---")
+    console.log("User ID:", user?.id)
+    console.log("Is Authenticated:", isAuthenticated)
+    console.log("Admin Chat IDs from config:", config.app.adminChatIds)
+    console.log("Is current user ID in adminChatIds:", config.app.adminChatIds.includes(user?.id || 0))
+    console.log("Final isAdmin status:", isAdmin)
+    console.log("Auth Loading:", authLoading)
+    console.log("Telegram Loading:", telegramLoading)
+    console.log("-------------------------")
+  }
+  // --- END DEBUGGING LOGS ---
   // Show loading spinner while Telegram WebApp is initializing or auth is loading
   if (telegramLoading || authLoading) {
     return (

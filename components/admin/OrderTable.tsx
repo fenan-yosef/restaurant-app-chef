@@ -13,7 +13,7 @@ import { formatCurrency, toNumber } from "@/lib/utils"
 import { ArrowUpDown, Search, User, Package, ListFilter, RotateCcw } from "lucide-react"
 import { telegramLogger } from "@/lib/telegram-logger"
 import { cn } from "@/lib/utils"
-import ProductGridSkeleton from "@/components/LoadingStates/ProductGridSkeleton" // Import ProductGridSkeleton
+import ProductGridSkeleton from "@/components/LoadingStates/ProductGridSkeleton" // Corrected import path
 
 type OrderStatus = "pending" | "confirmed" | "preparing" | "ready" | "delivered" | "cancelled"
 

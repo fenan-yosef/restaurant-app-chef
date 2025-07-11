@@ -22,7 +22,6 @@ import { formatCurrency, toNumber } from "@/lib/utils"
 import { getImageUrl } from "@/lib/product-parser" // Corrected import path
 import { telegramLogger } from "@/lib/telegram-logger"
 import ProductGridSkeleton from "@/components/LoadingStates/ProductGridSkeleton" // Corrected import path
-
 export default function ProductTable() {
     const { user: adminUser, isAuthenticated, isLoading: authLoading } = useAuth()
     const [products, setProducts] = useState<Product[]>([])

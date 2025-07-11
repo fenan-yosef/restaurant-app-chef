@@ -30,6 +30,18 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         const isAdmin = config.app.adminChatIds.includes(user.id)
         telegramLogger.debug(`Admin check for user ${user.id}: ${isAdmin ? "Granted" : "Denied"}`, "AdminLayout")
 
+        // --- DEBUGGING LOGS FOR ADMIN LAYOUT ---
+        if (config.ui.showDebugInfo) {
+            console.log("--- AdminLayout Debug ---")
+            console.log("User ID:", user?.id)
+            console.log("Is Authenticated:", isAuthenticated)
+            console.log("Admin Chat IDs from config:", config.app.adminChatIds)
+            console.log("Is current user ID in adminChatIds:", config.app.adminChatIds.includes(user.id))
+            console.log("Final isAdmin status:", isAdmin)
+            console.log("-------------------------")
+        }
+        // --- END DEBUGGING LOGS ---
+
         if (!isAdmin) {
             telegramLogger.warn(`Admin access denied: User ID ${user.id} is not in admin list.`, "AdminLayout")
             // Redirect to home or show an access denied page
@@ -67,6 +79,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                         <p>Is Authenticated: {String(isAuthenticated)}</p>
                         <p>Current User ID: {user?.id || "N/A"}</p>
                         <p>Admin Chat IDs: {JSON.stringify(config.app.adminChatIds)}</p>
+                        <p>Is current user ID in adminChatIds (rendered): {String(isAdmin)}</p>
                     </div>
                 )}
             </div>

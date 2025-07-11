@@ -1,52 +1,32 @@
 import type React from "react"
-import type { Metadata } from "next"
-import { Geist, Geist_Mono } from "next/font/google"
-import "./globals.css"
-import TelegramScript from "@/components/TelegramScript"
+import { Inter } from "next/font/google"
 import { ThemeProvider } from "@/components/ThemeProvider"
-import { config } from "@/lib/config"
-import { telegramLogger } from "@/lib/telegram-logger" // Import the logger
+import TelegramScript from "@/components/TelegramScript"
+import { config, logConfig } from "@/lib/config" // Import logConfig
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-})
+import "./globals.css"
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-})
+const inter = Inter({ subsets: ["latin"] })
 
-export const metadata: Metadata = {
-  title: config.app.name,
-  description: "Fresh bakery products delivered to your door with advanced search and modern UI",
-  keywords: ["bakery", "cakes", "pastries", "delivery", "telegram", "mini app"],
-  authors: [{ name: "Chef Figoz Bakery" }],
+export const metadata = {
+  title: "Chef Figoz Bakery",
+  description: "Delicious pastries and cakes delivered to your door.",
 }
 
-export default function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode
-}>) {
-  // Log app startup and initial config status (server-side)
-  telegramLogger.info("Application RootLayout initialized", "AppStartup")
-  telegramLogger.debug(`Server-side config.features.enableLogging: ${config.features.enableLogging}`, "AppStartup")
-  telegramLogger.debug(
-    `Server-side config.telegram.logChatId: ${config.telegram.logChatId ? "Present" : "Missing"}`,
-    "AppStartup",
-  )
-  telegramLogger.debug(
-    `Server-side config.telegram.botToken: ${config.telegram.botToken ? "Present" : "Missing"}`,
-    "AppStartup",
-  )
+export default function RootLayout({ children }: { children: React.ReactNode }) {
+  // Log configuration on the server side (during build/SSR)
+  // This will only run once per request on the server.
+  // For client-side debug info, check individual components.
+  if (config.ui.showDebugInfo) {
+    logConfig()
+  }
 
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
-        <ThemeProvider>
-          <TelegramScript />
+      <body className={inter.className}>
+        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           {children}
+          <TelegramScript />
         </ThemeProvider>
       </body>
     </html>

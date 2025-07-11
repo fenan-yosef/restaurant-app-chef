@@ -22,7 +22,7 @@ export function useTheme() {
     return context
 }
 
-export function useThemeLogic() {
+export function useThemeLogic(p0: { attribute: string | undefined; defaultTheme: string | undefined; enableSystem: boolean | undefined }) {
     const [theme, setTheme] = useState<Theme>("system")
     const [resolvedTheme, setResolvedTheme] = useState<"light" | "dark">("light")
     const [isLoading, setIsLoading] = useState(true)

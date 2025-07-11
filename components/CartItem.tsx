@@ -6,6 +6,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Plus, Minus, Trash2 } from "lucide-react"
 import type { CartItem as CartItemType } from "@/lib/types"
 import { useTelegram } from "@/hooks/useTelegram"
+import { formatCurrency, toNumber } from "@/lib/utils"
 
 interface CartItemProps {
     item: CartItemType
@@ -34,6 +35,10 @@ export default function CartItem({ item, onUpdateQuantity, onRemove }: CartItemP
 
     const imageUrl = item.photos && item.photos.length > 0 ? item.photos[0] : `/placeholder.svg?height=80&width=80`
 
+    // Convert price to number for calculations
+    const priceNumber = toNumber(item.price)
+    const totalPrice = priceNumber * item.quantity
+
     return (
         <Card>
             <CardContent className="p-4">
@@ -50,8 +55,8 @@ export default function CartItem({ item, onUpdateQuantity, onRemove }: CartItemP
 
                     <div className="flex-1 min-w-0">
                         <h4 className="font-medium truncate">{item.name}</h4>
-                        <p className="text-sm text-gray-600">${item.price.toFixed(2)} each</p>
-                        <p className="font-semibold text-green-600">${(item.price * item.quantity).toFixed(2)}</p>
+                        <p className="text-sm text-gray-600">{formatCurrency(priceNumber)} each</p>
+                        <p className="font-semibold text-green-600">{formatCurrency(totalPrice)}</p>
                     </div>
 
                     <div className="flex items-center space-x-2">

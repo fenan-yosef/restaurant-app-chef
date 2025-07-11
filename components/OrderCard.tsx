@@ -2,6 +2,7 @@ import Image from "next/image"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import type { Order } from "@/lib/types"
+import { formatCurrency, toNumber } from "@/lib/utils"
 
 interface OrderCardProps {
     order: Order
@@ -27,6 +28,9 @@ export default function OrderCard({ order }: OrderCardProps) {
         })
     }
 
+    // Convert total_amount to number for calculations
+    const totalAmount = toNumber(order.total_amount)
+
     return (
         <Card>
             <CardHeader>
@@ -49,6 +53,10 @@ export default function OrderCard({ order }: OrderCardProps) {
                                 ? item.product.photos[0]
                                 : `/placeholder.svg?height=40&width=40`
 
+                        // Convert item price to number for calculations
+                        const itemPrice = toNumber(item.price)
+                        const itemTotal = itemPrice * item.quantity
+
                         return (
                             <div key={item.id} className="flex items-center space-x-3">
                                 <div className="relative h-10 w-10 flex-shrink-0">
@@ -63,10 +71,10 @@ export default function OrderCard({ order }: OrderCardProps) {
                                 <div className="flex-1 min-w-0">
                                     <p className="font-medium truncate">{item.product.name}</p>
                                     <p className="text-sm text-gray-600">
-                                        {item.quantity}x ${item.price.toFixed(2)}
+                                        {item.quantity}x {formatCurrency(itemPrice)}
                                     </p>
                                 </div>
-                                <p className="font-medium">${(item.quantity * item.price).toFixed(2)}</p>
+                                <p className="font-medium">{formatCurrency(itemTotal)}</p>
                             </div>
                         )
                     })}
@@ -74,7 +82,7 @@ export default function OrderCard({ order }: OrderCardProps) {
                     <div className="border-t pt-3 mt-3">
                         <div className="flex justify-between items-center">
                             <span className="font-semibold">Total:</span>
-                            <span className="font-bold text-lg text-green-600">${order.total_amount.toFixed(2)}</span>
+                            <span className="font-bold text-lg text-green-600">{formatCurrency(totalAmount)}</span>
                         </div>
 
                         {order.delivery_address && (

@@ -3,6 +3,8 @@
 import { useState, useEffect } from "react"
 import type { TelegramUser } from "@/lib/types"
 import { useTelegram } from "./useTelegram"
+import { apiClient } from "@/lib/api-client"
+import { config } from "@/lib/config"
 
 export function useAuth() {
     const { webApp, user: telegramUser, isLoading: telegramLoading } = useTelegram()
@@ -12,62 +14,40 @@ export function useAuth() {
 
     useEffect(() => {
         const authenticate = async () => {
-            console.log("Starting authentication...")
-            console.log("WebApp:", webApp)
-            console.log("Telegram User:", telegramUser)
+            if (config.ui.showDebugInfo) {
+                console.log("🔐 Starting authentication...")
+                console.log("Telegram Mock Mode:", config.telegram.mockMode)
+                console.log("Telegram User:", telegramUser)
+            }
 
-            // If we're in development or if Telegram user exists
-            if (telegramUser || process.env.NODE_ENV === "development") {
-                try {
-                    // In development, create a mock user if no Telegram user
-                    const userToAuth = telegramUser || {
-                        id: 12345,
-                        first_name: "Test User",
-                        last_name: "Dev",
-                        username: "testuser",
-                    }
+            try {
+                if (config.telegram.mockMode) {
+                    // Use mock authentication in development
+                    const result = await apiClient.authenticateUser("")
+                    setUser(result.user)
+                    setIsAuthenticated(true)
 
-                    if (webApp?.initData) {
-                        // Try to authenticate with Telegram
-                        const response = await fetch("/api/auth/telegram", {
-                            method: "POST",
-                            headers: {
-                                "Content-Type": "application/json",
-                            },
-                            body: JSON.stringify({
-                                initData: webApp.initData,
-                            }),
-                        })
+                    if (config.ui.showDebugInfo) {
+                        console.log("✅ Mock authentication successful:", result.user)
+                    }
+                } else if (telegramUser && webApp?.initData) {
+                    // Use real Telegram authentication in production
+                    const result = await apiClient.authenticateUser(webApp.initData)
+                    setUser(result.user)
+                    setIsAuthenticated(true)
 
-                        if (response.ok) {
-                            const data = await response.json()
-                            setUser(data.user)
-                            setIsAuthenticated(true)
-                            console.log("Authenticated successfully:", data.user)
-                        } else {
-                            console.log("Auth failed, using fallback")
-                            // Fallback for development
-                            setUser(userToAuth)
-                            setIsAuthenticated(true)
-                        }
-                    } else {
-                        console.log("No initData, using fallback user")
-                        // Fallback authentication
-                        setUser(userToAuth)
-                        setIsAuthenticated(true)
+                    if (config.ui.showDebugInfo) {
+                        console.log("✅ Telegram authentication successful:", result.user)
                     }
-                } catch (error) {
-                    console.error("Authentication error:", error)
-                    // Fallback for development
-                    if (process.env.NODE_ENV === "development") {
-                        setUser({
-                            id: 12345,
-                            first_name: "Test User",
-                            last_name: "Dev",
-                            username: "testuser",
-                        })
-                        setIsAuthenticated(true)
-                    }
+                }
+            } catch (error) {
+                console.error("❌ Authentication failed:", error)
+
+                // Fallback to mock user in development
+                if (config.app.isDevelopment) {
+                    setUser(config.telegram.mockUser)
+                    setIsAuthenticated(true)
+                    console.log("🔄 Using fallback mock user")
                 }
             }
 

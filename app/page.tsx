@@ -160,6 +160,7 @@ export default function Home() {
 
   const isAdmin = user && config.app.adminChatIds.includes(Number(user.id))
   console.log("============")
+
   console.log("USER", user)
   console.log("ADMIN ID", user ? config.app.adminChatIds.includes(Number(user.id)) : false)
 
@@ -271,7 +272,7 @@ export default function Home() {
               </p>
             </div>
             <div className="flex space-x-2">
-              {true && (
+              {isAdmin && (
                 <Button
                   variant="outline"
                   size="sm"

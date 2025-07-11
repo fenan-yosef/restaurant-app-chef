@@ -27,7 +27,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         }
 
         // Check if the user's ID is in the list of admin chat IDs
-        const isAdmin = config.app.adminChatIds.includes(user.id)
+        const isAdmin = config.app.adminChatIds.includes(Number(user.id))
         telegramLogger.debug(`Admin check for user ${user.id}: ${isAdmin ? "Granted" : "Denied"}`, "AdminLayout")
 
         // --- DEBUGGING LOGS FOR ADMIN LAYOUT ---
@@ -36,7 +36,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             console.log("User ID:", user?.id)
             console.log("Is Authenticated:", isAuthenticated)
             console.log("Admin Chat IDs from config:", config.app.adminChatIds)
-            console.log("Is current user ID in adminChatIds:", config.app.adminChatIds.includes(user.id))
+            console.log("Is current user ID in adminChatIds:", config.app.adminChatIds.includes(Number(user.id)))
             console.log("Final isAdmin status:", isAdmin)
             console.log("-------------------------")
         }
@@ -45,7 +45,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         if (!isAdmin) {
             telegramLogger.warn(`Admin access denied: User ID ${user.id} is not in admin list.`, "AdminLayout")
             // Redirect to home or show an access denied page
-            // router.replace("/")
+            router.replace("/")
         }
     }, [isLoading, isAuthenticated, user, router])
 
@@ -59,7 +59,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
     // If not authenticated or not an admin, the useEffect will handle redirection.
     // Show a loading/denied state while redirecting or if there's a delay.
-    const isAdmin = user && config.app.adminChatIds.includes(user.id)
+    const isAdmin = user && config.app.adminChatIds.includes(Number(user.id))
     if (!isAuthenticated || !user || !isAdmin) {
         return (
             <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4 text-center">

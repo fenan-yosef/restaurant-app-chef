@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
 import type { Product, CartItem } from "@/lib/types"
 import { useAuth } from "@/hooks/useAuth"
@@ -29,6 +29,8 @@ export default function Home() {
     isLoading: telegramLoading,
   } = useTelegram() // Get webApp and telegramUser from useTelegram
 
+  const [visibleCount, setVisibleCount] = useState(20) // render first 20 products
+  const loadMoreRef = useRef<HTMLDivElement>(null)
   const [allProducts, setAllProducts] = useState<Product[]>([])
   const [cartItems, setCartItems] = useState<CartItem[]>([])
   const [availableFilters, setAvailableFilters] = useState({
@@ -355,7 +357,9 @@ export default function Home() {
             {filteredProducts.length === 0 ? (
               <div className="text-center py-16 space-y-4">
                 <div className="text-6xl opacity-50">🔍</div>
-                <h3 className="text-xl font-semibold text-gray-600 dark:text-gray-400">No products found</h3>
+                <h3 className="text-xl font-semibold text-gray-600 dark:text-gray-400">
+                  No products found
+                </h3>
                 <p className="text-gray-500 dark:text-gray-500 max-w-md mx-auto">
                   {filters.query
                     ? `No products match "${filters.query}". Try adjusting your search terms or filters.`
@@ -373,31 +377,41 @@ export default function Home() {
                 )}
               </div>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                {filteredProducts.map((product, index) => (
-                  <div key={product.id} style={{ animationDelay: `${index * 0.1}s` } as React.CSSProperties}>
-                    <ProductCard
-                      product={product}
-                      onAddToCart={handleAddToCart}
-                      onPlaceOrder={handlePlaceOrder}
-                      cartQuantity={getCartQuantity(product.id)}
-                      highlightText={filters.query ? ((text: string) => highlightText(text, filters.query)) : undefined}
-                      className={`animate-fade-in`}
-                    />
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {/* Load More Hint */}
-            {filteredProducts.length > 0 && filteredProducts.length === allProducts.length && (
-              <div className="text-center mt-12 py-8 border-t border-gray-200 dark:border-gray-700">
-                <div className="space-y-2">
-                  <Sparkles className="h-8 w-8 mx-auto text-gray-400" />
-                  <p className="text-gray-500 dark:text-gray-400">You've seen all our delicious products! 🎉</p>
-                  <p className="text-sm text-gray-400">Check back soon for new additions to our menu</p>
+              <>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                  {filteredProducts.slice(0, visibleCount).map((product, index) => (
+                    <div key={product.id} style={{ animationDelay: `${index * 0.1}s` } as React.CSSProperties}>
+                      <ProductCard
+                        product={product}
+                        onAddToCart={handleAddToCart}
+                        onPlaceOrder={handlePlaceOrder}
+                        cartQuantity={getCartQuantity(product.id)}
+                        highlightText={filters.query ? ((text: string) => highlightText(text, filters.query)) : undefined}
+                        className="animate-fade-in"
+                      />
+                    </div>
+                  ))}
+                  {/* Only include the observer element if more products are available */}
+                  {visibleCount < filteredProducts.length && <div ref={loadMoreRef} />}
                 </div>
-              </div>
+
+                {visibleCount < filteredProducts.length ? (
+                  <div className="text-center mt-12 py-8 border-t border-gray-200 dark:border-gray-700">
+                    <p className="text-gray-500 dark:text-gray-400">
+                      Loading more products...
+                    </p>
+                  </div>
+                ) : (
+                  <div className="text-center mt-12 py-8 border-t border-gray-200 dark:border-gray-700">
+                    <h3 className="text-lg font-semibold">
+                      You've seen all our delicious products! 🎉
+                    </h3>
+                    <p className="text-sm text-gray-400">
+                      Check back soon for new additions to our menu
+                    </p>
+                  </div>
+                )}
+              </>
             )}
           </>
         )}

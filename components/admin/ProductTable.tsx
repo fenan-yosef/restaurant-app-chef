@@ -205,6 +205,7 @@ export default function ProductTable() {
                                                 width={60}
                                                 height={60}
                                                 className="rounded object-cover"
+                                                loading="lazy"
                                             />
                                         </TableCell>
                                         <TableCell className="font-medium">{product.name}</TableCell>

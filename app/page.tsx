@@ -267,7 +267,7 @@ export default function Home() {
               </p>
             </div>
             <div className="flex space-x-2">
-              {isAdmin && (
+              {true && (
                 <Button
                   variant="outline"
                   size="sm"

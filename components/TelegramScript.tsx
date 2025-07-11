@@ -8,6 +8,7 @@ export default function TelegramScript() {
     useEffect(() => {
         // Log configuration in development
         logConfig()
+        console.log("TelegramScript log: Config object:", config)
         telegramLogger.debug(`Telegram logging enabled: ${config.features.enableLogging}`, "TelegramScript")
         telegramLogger.debug(`Debug info enabled: ${config.ui.showDebugInfo}`, "TelegramScript")
         telegramLogger.debug(`Client-side telegramLogger.isEnabled: ${telegramLogger["isEnabled"]}`, "TelegramScript") // Access private property for debug

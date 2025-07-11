@@ -232,6 +232,7 @@ export function logConfig() {
         console.log("Telegram Mock Mode:", config.telegram.mockMode)
         console.log("Features:", config.features)
         console.log("Admin Chat IDs:", config.app.adminChatIds) // Log admin IDs
+        console.log("User Chat ID:", config.telegram.mockUser.id) // Log user chat ID for comparison
         console.groupEnd()
     }
 }

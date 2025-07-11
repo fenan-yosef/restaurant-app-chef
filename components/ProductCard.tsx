@@ -6,73 +6,188 @@ import type { Product } from "@/lib/types"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardFooter } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Plus, Minus } from "lucide-react"
+import { ShoppingCart, Heart, Star, Package } from "lucide-react"
 import { useTelegram } from "@/hooks/useTelegram"
+import { getImageUrl } from "@/lib/product-parser"
+import { cn } from "@/lib/utils"
 
 interface ProductCardProps {
     product: Product
     onAddToCart: (productId: number, quantity: number) => void
+    onPlaceOrder: (productId: number, quantity: number) => void
     cartQuantity?: number
+    highlightText?: (text: string) => string
+    className?: string
 }
 
-export default function ProductCard({ product, onAddToCart, cartQuantity = 0 }: ProductCardProps) {
-    const [quantity, setQuantity] = useState(1)
+export default function ProductCard({
+    product,
+    onAddToCart,
+    onPlaceOrder,
+    cartQuantity = 0,
+    highlightText,
+    className
+}: ProductCardProps & { style?: React.CSSProperties }) {
+    const [isLiked, setIsLiked] = useState(false)
+    const [imageLoaded, setImageLoaded] = useState(false)
     const { hapticFeedback } = useTelegram()
 
     const handleAddToCart = () => {
         hapticFeedback("light")
-        onAddToCart(product.id, quantity)
+        onAddToCart(product.id, 1)
     }
 
-    const handleQuantityChange = (delta: number) => {
-        const newQuantity = Math.max(1, quantity + delta)
-        setQuantity(newQuantity)
+    const handlePlaceOrder = () => {
+        hapticFeedback("medium")
+        onPlaceOrder(product.id, 1)
+    }
+
+    const handleLike = () => {
+        setIsLiked(!isLiked)
         hapticFeedback("light")
     }
 
-    const imageUrl =
-        product.photos && product.photos.length > 0 ? product.photos[0] : `/placeholder.svg?height=200&width=200`
+    const imageUrl = getImageUrl(product.photos)
+
+    const renderHighlightedText = (text: string) => {
+        if (highlightText) {
+            return <span dangerouslySetInnerHTML={{ __html: highlightText(text) }} />
+        }
+        return text
+    }
 
     return (
-        <Card className="overflow-hidden">
-            <div className="relative h-48">
+        <Card
+            className={cn(
+                "group overflow-hidden transition-all duration-300 hover:shadow-xl hover:scale-[1.02] animate-fade-in card-hover",
+                "border-0 shadow-md bg-white dark:bg-gray-800",
+                className,
+            )}
+        >
+            <div className="relative h-48 overflow-hidden">
+                {!imageLoaded && (
+                    <div className="absolute inset-0 bg-gradient-to-br from-gray-200 to-gray-300 dark:from-gray-700 dark:to-gray-800 animate-pulse" />
+                )}
                 <Image
                     src={imageUrl || "/placeholder.svg"}
                     alt={product.name}
                     fill
-                    className="object-cover"
+                    className={cn(
+                        "object-cover transition-all duration-500 group-hover:scale-110",
+                        imageLoaded ? "opacity-100" : "opacity-0",
+                    )}
                     sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                    unoptimized
+                    onLoad={() => setImageLoaded(true)}
                 />
-                {cartQuantity > 0 && <Badge className="absolute top-2 right-2 bg-green-500">{cartQuantity} in cart</Badge>}
+
+                {/* Overlay Elements */}
+                <div className="absolute top-2 left-2 flex flex-col space-y-1">
+                    {cartQuantity > 0 && (
+                        <Badge className="bg-green-500 text-white animate-bounce shadow-lg">{cartQuantity} in cart</Badge>
+                    )}
+                    <Badge className="bg-blue-500 text-white shadow-lg">New</Badge>
+                </div>
+
+                <div className="absolute top-2 right-2 flex flex-col space-y-1">
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={handleLike}
+                        className={cn(
+                            "h-8 w-8 rounded-full bg-white/80 backdrop-blur-sm transition-all duration-200",
+                            "hover:bg-white hover:scale-110 dark:bg-gray-800/80 dark:hover:bg-gray-800",
+                            isLiked && "text-red-500",
+                        )}
+                    >
+                        <Heart className={cn("h-4 w-4", isLiked && "fill-current")} />
+                    </Button>
+                </div>
+
+                {/* Gradient Overlay */}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
             </div>
 
-            <CardContent className="p-4">
-                <div className="flex justify-between items-start mb-2">
-                    <h3 className="font-semibold text-lg line-clamp-2">{product.name}</h3>
-                    <Badge variant="secondary">{product.category}</Badge>
+            <CardContent className="p-4 space-y-3">
+                <div className="flex justify-between items-start">
+                    <h3 className="font-semibold text-lg line-clamp-2 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors duration-200">
+                        {renderHighlightedText(product.name)}
+                    </h3>
+                    <Badge variant="secondary" className="shrink-0 ml-2 dark:bg-gray-700">
+                        {product.category}
+                    </Badge>
                 </div>
 
-                <p className="text-gray-600 text-sm mb-3 line-clamp-2">{product.description}</p>
-
-                <div className="flex justify-between items-center">
-                    <span className="text-2xl font-bold text-green-600">${product.price.toFixed(2)}</span>
+                {/* Product Attributes */}
+                <div className="flex flex-wrap gap-1">
+                    {product.design && (
+                        <Badge
+                            variant="outline"
+                            className="text-xs bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/20 dark:text-blue-300 dark:border-blue-800"
+                        >
+                            🎨 {product.design}
+                        </Badge>
+                    )}
+                    {product.flavor && (
+                        <Badge
+                            variant="outline"
+                            className="text-xs bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-900/20 dark:text-orange-300 dark:border-orange-800"
+                        >
+                            🍽️ {product.flavor}
+                        </Badge>
+                    )}
+                    {product.occasion && (
+                        <Badge
+                            variant="outline"
+                            className="text-xs bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-900/20 dark:text-purple-300 dark:border-purple-800"
+                        >
+                            🎉 {product.occasion}
+                        </Badge>
+                    )}
+                    {product.size && (
+                        <Badge
+                            variant="outline"
+                            className="text-xs bg-green-50 text-green-700 border-green-200 dark:bg-green-900/20 dark:text-green-300 dark:border-green-800"
+                        >
+                            📏 {product.size}
+                        </Badge>
+                    )}
                 </div>
+
+                {/* Rating (Mock) */}
+                <div className="flex items-center space-x-1">
+                    {[...Array(5)].map((_, i) => (
+                        <Star
+                            key={i}
+                            className={cn("h-4 w-4", i < 4 ? "text-yellow-400 fill-current" : "text-gray-300 dark:text-gray-600")}
+                        />
+                    ))}
+                    <span className="text-sm text-gray-600 dark:text-gray-400 ml-1">(4.0)</span>
+                </div>
+
+                {/* Description Preview */}
+                <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-2">
+                    {renderHighlightedText(product.description || "Delicious bakery item made with love and care.")}
+                </p>
             </CardContent>
 
-            <CardFooter className="p-4 pt-0">
-                <div className="flex items-center justify-between w-full">
-                    <div className="flex items-center space-x-2">
-                        <Button variant="outline" size="sm" onClick={() => handleQuantityChange(-1)} disabled={quantity <= 1}>
-                            <Minus className="h-4 w-4" />
-                        </Button>
-                        <span className="font-medium min-w-[2rem] text-center">{quantity}</span>
-                        <Button variant="outline" size="sm" onClick={() => handleQuantityChange(1)}>
-                            <Plus className="h-4 w-4" />
-                        </Button>
-                    </div>
-
-                    <Button onClick={handleAddToCart} className="flex-1 ml-4">
+            <CardFooter className="p-4 pt-0 space-y-3">
+                {/* Action Buttons */}
+                <div className="flex space-x-2 w-full">
+                    <Button
+                        onClick={handleAddToCart}
+                        variant="outline"
+                        className="flex-1 transition-all duration-200 hover:scale-105 hover:bg-blue-50 hover:border-blue-300 dark:hover:bg-blue-900/20 dark:hover:border-blue-700 bg-transparent"
+                    >
+                        <ShoppingCart className="h-4 w-4 mr-2" />
                         Add to Cart
+                    </Button>
+                    <Button
+                        onClick={handlePlaceOrder}
+                        className="flex-1 transition-all duration-200 hover:scale-105 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 dark:from-blue-500 dark:to-purple-500"
+                    >
+                        <Package className="h-4 w-4 mr-2" />
+                        Order Now
                     </Button>
                 </div>
             </CardFooter>

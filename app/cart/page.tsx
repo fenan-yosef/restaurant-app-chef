@@ -13,6 +13,7 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { ArrowLeft, ShoppingBag } from "lucide-react"
+import { formatCurrency, toNumber } from "@/lib/utils"
 
 export default function CartPage() {
     const router = useRouter()
@@ -54,11 +55,11 @@ export default function CartPage() {
 
     // Update main button
     useEffect(() => {
-        const totalAmount = cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0)
+        const totalAmount = cartItems.reduce((sum, item) => sum + toNumber(item.price) * item.quantity, 0)
         const canPlaceOrder = cartItems.length > 0 && deliveryAddress.trim() && phoneNumber.trim()
 
         if (canPlaceOrder) {
-            showMainButton(`Place Order - $${totalAmount.toFixed(2)}`, handlePlaceOrder)
+            showMainButton(`Place Order - ${formatCurrency(totalAmount)}`, handlePlaceOrder)
         } else {
             hideMainButton()
         }
@@ -142,7 +143,7 @@ export default function CartPage() {
         }
     }
 
-    const totalAmount = cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0)
+    const totalAmount = cartItems.reduce((sum, item) => sum + toNumber(item.price) * item.quantity, 0)
     const totalItems = cartItems.reduce((sum, item) => sum + item.quantity, 0)
 
     if (isLoading) {
@@ -174,7 +175,7 @@ export default function CartPage() {
                 <div className="px-4 py-3">
                     <h1 className="text-xl font-bold">🛒 Your Cart</h1>
                     <p className="text-sm text-gray-600">
-                        {totalItems} item{totalItems !== 1 ? "s" : ""} • ${totalAmount.toFixed(2)}
+                        {totalItems} item{totalItems !== 1 ? "s" : ""} • {formatCurrency(totalAmount)}
                     </p>
                 </div>
             </div>
@@ -236,7 +237,7 @@ export default function CartPage() {
                         <div className="space-y-2">
                             <div className="flex justify-between">
                                 <span>Subtotal ({totalItems} items)</span>
-                                <span>${totalAmount.toFixed(2)}</span>
+                                <span>{formatCurrency(totalAmount)}</span>
                             </div>
                             <div className="flex justify-between">
                                 <span>Delivery Fee</span>
@@ -244,7 +245,7 @@ export default function CartPage() {
                             </div>
                             <div className="border-t pt-2 flex justify-between font-bold text-lg">
                                 <span>Total</span>
-                                <span className="text-green-600">${totalAmount.toFixed(2)}</span>
+                                <span className="text-green-600">{formatCurrency(totalAmount)}</span>
                             </div>
                         </div>
                     </CardContent>

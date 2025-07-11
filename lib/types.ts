@@ -68,13 +68,40 @@ export interface Product {
     id: number
     name: string
     description: string
-    price: number
+    price: string | number
     category: string
     photos: string[]
     videos: string[]
+    design?: string
+    flavor?: string
+    occasion?: string
+    size?: string
+    post_id?: number
     is_available: boolean
     created_at: string
     updated_at: string
+}
+
+export interface ParsedProductInfo {
+    title: string
+    category: string
+    design: string
+    flavor: string
+    occasion: string
+    size: string
+}
+
+export interface ProductFilters {
+    category?: string
+    design?: string
+    flavor?: string
+    occasion?: string
+    size?: string
+    search?: string
+    priceRange?: {
+        min: number
+        max: number
+    }
 }
 
 // Updated CartItem interface to match database structure
@@ -88,9 +115,13 @@ export interface CartItem {
     // Database join fields from products table
     name: string
     description: string
-    price: number
+    price: string | number
     photos: string[]
     category: string
+    design?: string
+    flavor?: string
+    occasion?: string
+    size?: string
 }
 
 // Alternative interface for when we need the full product object
@@ -107,7 +138,7 @@ export interface CartItemWithProduct {
 export interface Order {
     id: number
     user_id: number
-    total_amount: number
+    total_amount: string | number
     status: "pending" | "confirmed" | "preparing" | "ready" | "delivered" | "cancelled"
     delivery_address?: string
     phone_number?: string
@@ -121,7 +152,7 @@ export interface OrderItem {
     id: number
     product: Product
     quantity: number
-    price: number
+    price: string | number
 }
 
 declare global {

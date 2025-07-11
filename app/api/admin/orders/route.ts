@@ -5,7 +5,12 @@ import { config } from "@/lib/config"
 
 // Helper to check if a user is an admin
 function isAdmin(userId: number | undefined): boolean {
-    return userId !== undefined && config.app.adminChatIds.includes(userId)
+    const result = userId !== undefined && config.app.adminChatIds.includes(userId)
+    telegramLogger.debug(
+        `isAdmin check: User ID ${userId}, Admin IDs: ${JSON.stringify(config.app.adminChatIds)}, Result: ${result}`,
+        "admin/orders/isAdmin",
+    )
+    return result
 }
 
 export async function GET(request: NextRequest) {
@@ -80,6 +85,12 @@ export async function GET(request: NextRequest) {
 
 export async function PUT(request: NextRequest) {
     const { orderId, status, adminUserId } = await request.json()
+
+    // Server-side logging for debugging
+    telegramLogger.debug(
+        `Admin orders PUT: Received adminUserId: ${adminUserId}, orderId: ${orderId}, status: ${status}`,
+        "admin/orders/PUT",
+    )
 
     if (!isAdmin(adminUserId)) {
         telegramLogger.warn(

@@ -79,6 +79,7 @@ export interface Product {
     size?: string
     post_id?: number
     is_available: boolean
+    stock: number
     created_at: string
     updated_at: string
 }

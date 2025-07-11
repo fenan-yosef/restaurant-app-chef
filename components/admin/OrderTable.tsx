@@ -85,7 +85,7 @@ export default function OrderTable() {
             const response = await fetch("/api/admin/orders", {
                 method: "PUT",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ orderId, status: newStatus, adminUserId: adminUser.id }),
+                body: JSON.stringify({ orderId, status: newStatus, adminUserId: adminUser.id }), // Pass adminUserId
             })
 
             if (response.ok) {
@@ -241,7 +241,7 @@ export default function OrderTable() {
                                                         <SelectValue />
                                                     </Badge>
                                                 </SelectTrigger>
-                                                <SelectContent className="bg-white dark:bg-black text-black dark:text-white">
+                                                <SelectContent>
                                                     {statusOptions.map((status) => (
                                                         <SelectItem key={status} value={status}>
                                                             {status.charAt(0).toUpperCase() + status.slice(1)}

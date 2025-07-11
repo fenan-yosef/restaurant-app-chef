@@ -5,12 +5,20 @@ import { config } from "@/lib/config"
 
 // Helper to check if a user is an admin
 function isAdmin(userId: number | undefined): boolean {
-    return userId !== undefined && config.app.adminChatIds.includes(userId)
+    const result = userId !== undefined && config.app.adminChatIds.includes(userId)
+    telegramLogger.debug(
+        `isAdmin check: User ID ${userId}, Admin IDs: ${JSON.stringify(config.app.adminChatIds)}, Result: ${result}`,
+        "admin/products/isAdmin",
+    )
+    return result
 }
 
 export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const adminUserId = Number(searchParams.get("adminUserId"))
+
+    // Server-side logging for debugging
+    telegramLogger.debug(`Admin products GET: Received adminUserId: ${adminUserId}`, "admin/products/GET")
 
     if (!isAdmin(adminUserId)) {
         telegramLogger.warn(
@@ -24,7 +32,7 @@ export async function GET(request: NextRequest) {
 
     const query = `
     SELECT id, name, description, price, category, photos, videos,
-           design, flavor, occasion, size, post_id, is_available,
+           design, flavor, occasion, size, post_id, is_available, stock,
            created_at, updated_at
     FROM products
     ORDER BY created_at DESC
@@ -52,7 +60,14 @@ export async function POST(request: NextRequest) {
         occasion,
         size,
         is_available,
+        stock,
     } = await request.json()
+
+    // Server-side logging for debugging
+    telegramLogger.debug(
+        `Admin products POST: Received adminUserId: ${adminUserId}, name: ${name}, price: ${price}`,
+        "admin/products/POST",
+    )
 
     if (!isAdmin(adminUserId)) {
         telegramLogger.warn(
@@ -69,8 +84,8 @@ export async function POST(request: NextRequest) {
     }
 
     const query = `
-    INSERT INTO products (name, description, price, category, photos, videos, design, flavor, occasion, size, is_available)
-    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+    INSERT INTO products (name, description, price, category, photos, videos, design, flavor, occasion, size, is_available, stock)
+    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
     RETURNING *
   `
     try {
@@ -86,6 +101,7 @@ export async function POST(request: NextRequest) {
             occasion || null,
             size || null,
             is_available !== undefined ? is_available : true,
+            stock !== undefined ? stock : 0,
         ])
         telegramLogger.info(`Product created: ${result.rows[0].name} (ID: ${result.rows[0].id})`, "admin/products/POST")
         return NextResponse.json(result.rows[0])
@@ -110,7 +126,14 @@ export async function PUT(request: NextRequest) {
         occasion,
         size,
         is_available,
+        stock,
     } = await request.json()
+
+    // Server-side logging for debugging
+    telegramLogger.debug(
+        `Admin products PUT: Received adminUserId: ${adminUserId}, productId: ${id}, price: ${price}`,
+        "admin/products/PUT",
+    )
 
     if (!isAdmin(adminUserId)) {
         telegramLogger.warn(
@@ -125,32 +148,80 @@ export async function PUT(request: NextRequest) {
         "admin/products/PUT",
     )
 
-    if (!id || !name || !price) {
-        return NextResponse.json({ error: "Product ID, name, and price are required for update" }, { status: 400 })
+    if (!id) {
+        return NextResponse.json({ error: "Product ID is required for update" }, { status: 400 })
+    }
+
+    // Dynamically build the SET clause for partial updates
+    const updates: string[] = []
+    const values: any[] = []
+    let paramCount = 1
+
+    if (name !== undefined) {
+        updates.push(`name = $${paramCount++}`)
+        values.push(name)
+    }
+    if (description !== undefined) {
+        updates.push(`description = $${paramCount++}`)
+        values.push(description)
+    }
+    if (price !== undefined) {
+        updates.push(`price = $${paramCount++}`)
+        values.push(price)
+    }
+    if (category !== undefined) {
+        updates.push(`category = $${paramCount++}`)
+        values.push(category)
+    }
+    if (photos !== undefined) {
+        updates.push(`photos = $${paramCount++}`)
+        values.push(JSON.stringify(photos))
+    }
+    if (videos !== undefined) {
+        updates.push(`videos = $${paramCount++}`)
+        values.push(JSON.stringify(videos))
+    }
+    if (design !== undefined) {
+        updates.push(`design = $${paramCount++}`)
+        values.push(design)
+    }
+    if (flavor !== undefined) {
+        updates.push(`flavor = $${paramCount++}`)
+        values.push(flavor)
+    }
+    if (occasion !== undefined) {
+        updates.push(`occasion = $${paramCount++}`)
+        values.push(occasion)
+    }
+    if (size !== undefined) {
+        updates.push(`size = $${paramCount++}`)
+        values.push(size)
+    }
+    if (is_available !== undefined) {
+        updates.push(`is_available = $${paramCount++}`)
+        values.push(is_available)
+    }
+    if (stock !== undefined) {
+        updates.push(`stock = $${paramCount++}`)
+        values.push(stock)
+    }
+
+    updates.push(`updated_at = CURRENT_TIMESTAMP`)
+
+    if (updates.length === 0) {
+        return NextResponse.json({ error: "No fields to update" }, { status: 400 })
     }
 
     const query = `
     UPDATE products
-    SET name = $1, description = $2, price = $3, category = $4, photos = $5, videos = $6,
-        design = $7, flavor = $8, occasion = $9, size = $10, is_available = $11, updated_at = CURRENT_TIMESTAMP
-    WHERE id = $12
+    SET ${updates.join(", ")}
+    WHERE id = $${paramCount}
     RETURNING *
   `
+    values.push(id) // Add product ID as the last value
+
     try {
-        const result = await pool.query(query, [
-            name,
-            description || null,
-            price,
-            category || null,
-            JSON.stringify(photos || []),
-            JSON.stringify(videos || []),
-            design || null,
-            flavor || null,
-            occasion || null,
-            size || null,
-            is_available,
-            id,
-        ])
+        const result = await pool.query(query, values)
         if (result.rows.length === 0) {
             telegramLogger.warn(`Product ${id} not found for update by user ID: ${adminUserId}`, "admin/products/PUT")
             return NextResponse.json({ error: "Product not found" }, { status: 404 })
@@ -165,6 +236,12 @@ export async function PUT(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
     const { adminUserId, productId } = await request.json()
+
+    // Server-side logging for debugging
+    telegramLogger.debug(
+        `Admin products DELETE: Received adminUserId: ${adminUserId}, productId: ${productId}`,
+        "admin/products/DELETE",
+    )
 
     if (!isAdmin(adminUserId)) {
         telegramLogger.warn(

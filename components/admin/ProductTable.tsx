@@ -22,6 +22,7 @@ import { formatCurrency, toNumber } from "@/lib/utils"
 import { getImageUrl } from "@/lib/product-parser" // Corrected import path
 import { telegramLogger } from "@/lib/telegram-logger"
 import ProductGridSkeleton from "@/components/LoadingStates/ProductGridSkeleton" // Corrected import path
+
 export default function ProductTable() {
     const { user: adminUser, isAuthenticated, isLoading: authLoading } = useAuth()
     const [products, setProducts] = useState<Product[]>([])
@@ -78,7 +79,7 @@ export default function ProductTable() {
             const updatedProduct = {
                 ...productToUpdate,
                 price: toNumber(tempPrice),
-                adminUserId: adminUser.id,
+                adminUserId: adminUser.id, // Ensure adminUserId is sent
             }
             const response = await fetch("/api/admin/products", {
                 method: "PUT",
@@ -120,7 +121,7 @@ export default function ProductTable() {
             const response = await fetch("/api/admin/products", {
                 method: "DELETE",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ productId, adminUserId: adminUser.id }),
+                body: JSON.stringify({ productId, adminUserId: adminUser.id }), // Ensure adminUserId is sent
             })
 
             if (response.ok) {

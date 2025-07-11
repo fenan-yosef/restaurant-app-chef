@@ -159,7 +159,7 @@ export default function AdvancedSearch({
                                     <SelectTrigger className="mt-1">
                                         <SelectValue />
                                     </SelectTrigger>
-                                    <SelectContent>
+                                    <SelectContent className="bg-white dark:bg-black text-black dark:text-white">
                                         <SelectItem value="created_at">Date Added</SelectItem>
                                         <SelectItem value="name">Name</SelectItem>
                                     </SelectContent>

@@ -241,7 +241,7 @@ export default function OrderTable() {
                                                         <SelectValue />
                                                     </Badge>
                                                 </SelectTrigger>
-                                                <SelectContent>
+                                                <SelectContent className="bg-white dark:bg-black text-black dark:text-white">
                                                     {statusOptions.map((status) => (
                                                         <SelectItem key={status} value={status}>
                                                             {status.charAt(0).toUpperCase() + status.slice(1)}

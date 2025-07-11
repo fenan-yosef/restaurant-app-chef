@@ -158,10 +158,10 @@ export default function Home() {
     return cartItem ? cartItem.quantity : 0
   }
 
-  const isAdmin = user && config.app.adminChatIds.includes(user.id)
+  const isAdmin = user && config.app.adminChatIds.includes(Number(user.id))
   console.log("============")
   console.log("USER", user)
-  console.log("ADMIN ID", user ? config.app.adminChatIds.includes(user.id) : false)
+  console.log("ADMIN ID", user ? config.app.adminChatIds.includes(Number(user.id)) : false)
 
 
   // --- DEBUGGING LOGS FOR HOME PAGE ---

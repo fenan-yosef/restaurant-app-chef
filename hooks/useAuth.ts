@@ -42,7 +42,7 @@ export function useAuth() {
                     telegramLogger.warn("Not enough data for real Telegram authentication (missing user or initData).", "useAuth")
                     // Fallback to mock user if not in Telegram environment or data is missing
                     if (config.app.isDevelopment) {
-                        setUser(config.telegram.mockUser)
+                        setUser({ ...config.telegram.mockUser, photo_url: '' })
                         setIsAuthenticated(true)
                         telegramLogger.warn("Falling back to development mock user.", "useAuth")
                     } else {
@@ -57,7 +57,7 @@ export function useAuth() {
 
                 // Fallback to mock user in development
                 if (config.app.isDevelopment) {
-                    setUser(config.telegram.mockUser)
+                    setUser({ ...config.telegram.mockUser, photo_url: '' })
                     setIsAuthenticated(true)
                     telegramLogger.warn("Authentication failed, but using fallback mock user in development.", "useAuth")
                 }

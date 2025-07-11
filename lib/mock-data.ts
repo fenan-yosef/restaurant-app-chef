@@ -8,6 +8,7 @@
 import type { Product, CartItem, Order, TelegramUser } from "@/lib/types"
 
 export const mockUser: TelegramUser = {
+    photo_url: "",
     id: 12345,
     first_name: "John",
     last_name: "Doe",

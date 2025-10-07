@@ -55,6 +55,19 @@ export interface AppConfig {
 }
 
 // Environment-specific configurations
+// Read optional runtime config file (used for local overrides). This is a small JSON file
+// placed at config/app.config.json that can set { "environment": "development" } or "production".
+let runtimeEnv: string | undefined = undefined
+try {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const runtimeConfig = require("../config/app.config.json")
+    runtimeEnv = runtimeConfig?.environment
+} catch (e) {
+    // ignore if not present
+}
+
+const detectedEnv = process.env.NEXT_PUBLIC_ENVIRONMENT || runtimeEnv || process.env.NODE_ENV || "development"
+
 const developmentConfig: Partial<AppConfig> = {
     app: {
         name: "Artisan Bakery (Dev)",
@@ -172,9 +185,9 @@ const baseConfig: AppConfig = {
     },
 }
 
-// Merge configurations based on environment
+// Merge configurations based on environment (use detectedEnv)
 function createConfig(): AppConfig {
-    const isDevelopment = process.env.NODE_ENV === "development"
+    const isDevelopment = detectedEnv === "development"
     const envConfig = isDevelopment ? developmentConfig : productionConfig
 
     return {

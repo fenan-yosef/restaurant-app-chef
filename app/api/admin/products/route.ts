@@ -5,6 +5,12 @@ import { config } from "@/lib/config"
 
 // Helper to check if a user is an admin
 function isAdmin(userId: number | undefined): boolean {
+    // Allow access in development for easier local testing
+    if (config.app.isDevelopment) {
+        telegramLogger.debug(`Development mode detected - bypassing admin ID check.`, "admin/products/isAdmin")
+        return true
+    }
+
     const result = userId !== undefined && config.app.adminChatIds.includes(userId)
     telegramLogger.debug(
         `isAdmin check: User ID ${userId}, Admin IDs: ${JSON.stringify(config.app.adminChatIds)}, Result: ${result}`,
@@ -84,8 +90,8 @@ export async function POST(request: NextRequest) {
     }
 
     const query = `
-    INSERT INTO products (name, description, price, category, photos, videos, design, flavor, occasion, size, is_available, stock)
-    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+    INSERT INTO products (name, description, price, category, photos, videos, design, flavor, occasion, size, post_id, is_available, stock)
+    VALUES ($1, $2, $3, $4, $5::jsonb, $6::jsonb, $7, $8, $9, $10, $11, $12, $13)
     RETURNING *
   `
     try {
@@ -94,12 +100,13 @@ export async function POST(request: NextRequest) {
             description || null,
             price,
             category || null,
-            JSON.stringify(photos || []),
-            JSON.stringify(videos || []),
+            photos || [],
+            videos || [],
             design || null,
             flavor || null,
             occasion || null,
             size || null,
+            null, // post_id (optional)
             is_available !== undefined ? is_available : true,
             stock !== undefined ? stock : 0,
         ])
@@ -175,11 +182,11 @@ export async function PUT(request: NextRequest) {
     }
     if (photos !== undefined) {
         updates.push(`photos = $${paramCount++}`)
-        values.push(JSON.stringify(photos))
+        values.push(photos)
     }
     if (videos !== undefined) {
         updates.push(`videos = $${paramCount++}`)
-        values.push(JSON.stringify(videos))
+        values.push(videos)
     }
     if (design !== undefined) {
         updates.push(`design = $${paramCount++}`)

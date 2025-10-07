@@ -5,6 +5,12 @@ import { config } from "@/lib/config"
 
 // Helper to check if a user is an admin
 function isAdmin(userId: number | undefined): boolean {
+    // Allow access in development for easier local testing
+    if (config.app.isDevelopment) {
+        telegramLogger.debug(`Development mode detected - bypassing admin ID check.`, "admin/orders/isAdmin")
+        return true
+    }
+
     const result = userId !== undefined && config.app.adminChatIds.includes(userId)
     telegramLogger.debug(
         `isAdmin check: User ID ${userId}, Admin IDs: ${JSON.stringify(config.app.adminChatIds)}, Result: ${result}`,

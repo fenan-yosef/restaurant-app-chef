@@ -16,9 +16,15 @@ CREATE TABLE IF NOT EXISTS products (
   description   TEXT,
   price         NUMERIC(10,2) NOT NULL,
   category      TEXT,
-  photos        TEXT[] DEFAULT '{}',
-  videos        TEXT[] DEFAULT '{}',
+  photos        JSONB DEFAULT '[]'::jsonb,
+  videos        JSONB DEFAULT '[]'::jsonb,
+  design        TEXT,
+  flavor        TEXT,
+  occasion      TEXT,
+  size          TEXT,
+  post_id       INTEGER,
   is_available  BOOLEAN DEFAULT TRUE,
+  stock         INTEGER DEFAULT 0,
   created_at    TIMESTAMP WITH TIME ZONE DEFAULT now(),
   updated_at    TIMESTAMP WITH TIME ZONE DEFAULT now()
 );

@@ -40,34 +40,34 @@ export default function CartItem({ item, onUpdateQuantity, onRemove }: CartItemP
     const totalPrice = priceNumber * item.quantity
 
     return (
-        <Card>
+        <Card className="border border-slate-200/70 dark:border-slate-700/60 bg-white/80 dark:bg-slate-900/60 backdrop-blur shadow-sm">
             <CardContent className="p-4">
-                <div className="flex items-center space-x-4">
-                    <div className="relative h-16 w-16 flex-shrink-0">
+                <div className="flex items-center gap-4">
+                    <div className="relative h-16 w-16 flex-shrink-0 overflow-hidden rounded-md ring-1 ring-slate-200/70 dark:ring-slate-700/60">
                         <Image
                             src={imageUrl || "/placeholder.svg"}
                             alt={item.name}
                             fill
-                            className="object-cover rounded"
+                            className="object-cover"
                             sizes="64px"
                         />
                     </div>
 
                     <div className="flex-1 min-w-0">
-                        <h4 className="font-medium truncate">{item.name}</h4>
-                        <p className="text-sm text-gray-600">{formatCurrency(priceNumber)} each</p>
-                        <p className="font-semibold text-green-600">{formatCurrency(totalPrice)}</p>
+                        <h4 className="font-medium truncate text-sm md:text-base">{item.name}</h4>
+                        <p className="text-xs md:text-sm text-slate-500 dark:text-slate-400">{formatCurrency(priceNumber)} each</p>
+                        <p className="font-semibold text-green-600 dark:text-green-400 text-sm md:text-base">{formatCurrency(totalPrice)}</p>
                     </div>
 
-                    <div className="flex items-center space-x-2">
-                        <Button variant="outline" size="sm" onClick={() => handleQuantityChange(-1)}>
+                    <div className="flex items-center gap-2">
+                        <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => handleQuantityChange(-1)}>
                             <Minus className="h-4 w-4" />
                         </Button>
-                        <span className="font-medium min-w-[2rem] text-center">{item.quantity}</span>
-                        <Button variant="outline" size="sm" onClick={() => handleQuantityChange(1)}>
+                        <span className="font-medium min-w-[2rem] text-center tabular-nums text-sm">{item.quantity}</span>
+                        <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => handleQuantityChange(1)}>
                             <Plus className="h-4 w-4" />
                         </Button>
-                        <Button variant="destructive" size="sm" onClick={handleRemove}>
+                        <Button variant="destructive" size="icon" className="h-8 w-8" onClick={handleRemove}>
                             <Trash2 className="h-4 w-4" />
                         </Button>
                     </div>

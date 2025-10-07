@@ -161,6 +161,24 @@ export default function Home() {
   }
 
   const isAdmin = user && config.app.adminChatIds.includes(Number(user.id))
+  // Infinite scroll observer
+  useEffect(() => {
+    if (!loadMoreRef.current) return
+    const el = loadMoreRef.current
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            setVisibleCount((prev) => Math.min(prev + 16, filteredProducts.length))
+          }
+        })
+      },
+      { rootMargin: "600px 0px 0px 0px" },
+    )
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [filteredProducts.length])
+
   // console.log("============")
 
   // console.log("USER", user)
@@ -192,8 +210,8 @@ export default function Home() {
     )
   }
 
-  // Display "Please open in Telegram" if telegramUser is NOT detected
-  if (!telegramUser) {
+  // Display authentication prompt only when client is not authenticated
+  if (!isAuthenticated) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen p-4 text-center">
         <div className="space-y-6 max-w-md">
@@ -202,6 +220,21 @@ export default function Home() {
           <p className="text-gray-600 dark:text-gray-400 text-lg">
             Please open this app through Telegram to continue your delicious journey.
           </p>
+          <div className="flex items-center justify-center space-x-2">
+            <Button
+              variant="secondary"
+              onClick={() => {
+                // Add guest=1 to the URL and reload so useAuth picks up the browser fallback
+                if (typeof window !== "undefined") {
+                  const url = new URL(window.location.href)
+                  url.searchParams.set("guest", "1")
+                  window.location.href = url.toString()
+                }
+              }}
+            >
+              Continue in browser
+            </Button>
+          </div>
           <div className="flex items-center justify-center space-x-2 text-sm text-gray-500">
             <Sparkles className="h-4 w-4" />
             <span>Fresh • Delicious • Delivered</span>
@@ -259,37 +292,37 @@ export default function Home() {
 
   // Main app content when authenticated
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen mx-auto max-w-[1450px] px-2 sm:px-4">
       {/* Header */}
-      <div className="glass sticky top-0 z-10 border-b backdrop-blur-xl">
-        <div className="px-4 py-4">
-          <div className="flex items-center justify-between mb-4">
+      <div className="sticky top-0 z-20 backdrop-blur-xl supports-[backdrop-filter]:bg-white/70 dark:supports-[backdrop-filter]:bg-slate-900/60 border-b border-slate-200/70 dark:border-slate-700/60">
+        <div className="px-2 sm:px-4 py-4">
+          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div className="space-y-1">
-              <h1 className="text-2xl font-bold gradient-text flex items-center">
-                🥖 Chef Figoz Bakery
-                <TrendingUp className="h-5 w-5 ml-2 text-green-500" />
-              </h1>
-              <p className="text-sm text-gray-600 dark:text-gray-400">
-                Welcome back, <span className="font-medium text-blue-600">{user?.first_name}</span>! ✨
-              </p>
+              <div className="flex items-center gap-2">
+                <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight gradient-text flex items-center">
+                  🥖 Chef Figoz Bakery
+                </h1>
+                <span className="inline-flex items-center rounded-full bg-green-500/10 px-2 py-1 text-xs font-medium text-green-600 dark:text-green-400 ring-1 ring-inset ring-green-600/20">
+                  <TrendingUp className="h-3 w-3 mr-1" /> Fresh
+                </span>
+              </div>
+              <p className="text-sm text-slate-600 dark:text-slate-400">Welcome back, <span className="font-medium text-blue-600 dark:text-blue-400">{user?.first_name}</span>! ✨</p>
             </div>
-            <div className="flex space-x-2">
-              {isAdmin && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => router.push("/admin")}
-                  className="transition-all duration-200 hover:scale-105 glass"
-                >
-                  <Shield className="h-4 w-4 mr-1" />
-                  Admin
-                </Button>
-              )}
+            <div className="flex space-x-2 self-start md:self-auto">
+              <Button
+                variant={isAdmin ? "outline" : "ghost"}
+                size="sm"
+                onClick={() => router.push("/admin")}
+                className={`transition-all duration-200 hover:scale-105 rounded-lg shadow-sm ${!isAdmin ? "opacity-60" : ""}`}
+              >
+                <Shield className="h-4 w-4 mr-1" />
+                Admin
+              </Button>
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => router.push("/orders")}
-                className="transition-all duration-200 hover:scale-105 glass"
+                className="transition-all duration-200 hover:scale-105 rounded-lg shadow-sm"
               >
                 <Clock className="h-4 w-4 mr-1" />
                 Orders
@@ -298,7 +331,7 @@ export default function Home() {
                 variant="outline"
                 size="sm"
                 onClick={() => router.push("/cart")}
-                className="relative transition-all duration-200 hover:scale-105 glass"
+                className="relative transition-all duration-200 hover:scale-105 rounded-lg shadow-sm"
               >
                 <ShoppingCart className="h-4 w-4" />
                 {cartItems.length > 0 && (
@@ -313,7 +346,7 @@ export default function Home() {
       </div>
 
       {/* Advanced Search */}
-      <div className="px-4 py-6">
+      <div className="px-2 sm:px-4 py-6">
         <AdvancedSearch
           filters={filters}
           onFiltersChange={(newFilters) => {
@@ -328,7 +361,7 @@ export default function Home() {
       </div>
 
       {/* Products Section */}
-      <div className="px-4 pb-8">
+      <div className="px-1 sm:px-2 md:px-4 pb-12">
         {isLoading ? (
           <ProductGridSkeleton count={8} />
         ) : (
@@ -378,7 +411,7 @@ export default function Home() {
               </div>
             ) : (
               <>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
                   {filteredProducts.slice(0, visibleCount).map((product, index) => (
                     <div key={product.id} style={{ animationDelay: `${index * 0.1}s` } as React.CSSProperties}>
                       <ProductCard

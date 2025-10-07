@@ -6,7 +6,7 @@ import type { Product } from "@/lib/types"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardFooter } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { ShoppingCart, Heart, Star, Package } from "lucide-react"
+import { ShoppingCart, Heart, Star, Package, DollarSign } from "lucide-react"
 import { useTelegram } from "@/hooks/useTelegram"
 import { getImageUrl } from "@/lib/product-parser"
 import { cn } from "@/lib/utils"
@@ -49,8 +49,7 @@ export default function ProductCard({
     }
 
     const imageUrl = getImageUrl(product.photos)
-    console.log('++++++++++++')
-    console.log(imageUrl)
+    const priceNumber = Number.isNaN(Number(product.price)) ? product.price : Number(product.price)
 
     const renderHighlightedText = (text: string) => {
         if (highlightText) {
@@ -65,21 +64,21 @@ export default function ProductCard({
     return (
         <Card
             className={cn(
-                "group overflow-hidden transition-all duration-300 hover:shadow-xl hover:scale-[1.02] animate-fade-in card-hover",
-                "border-0 shadow-md bg-white dark:bg-gray-800",
+                "group overflow-hidden animate-fade-in card-hover",
+                "border border-transparent bg-card/90 dark:bg-card/80 shadow-lg hover:border-blue-100/60 dark:hover:border-slate-700",
                 className,
             )}
         >
-            <div className="relative h-48 overflow-hidden">
+            <div className="relative overflow-hidden aspect-[4/3]">
                 {!imageLoaded && (
-                    <div className="absolute inset-0 bg-gradient-to-br from-gray-200 to-gray-300 dark:from-gray-700 dark:to-gray-800 animate-pulse" />
+                    <div className="absolute inset-0 bg-gradient-to-br from-slate-200 via-slate-100 to-slate-300 dark:from-slate-700 dark:via-slate-800 dark:to-slate-700 animate-pulse" />
                 )}
                 <Image
                     src={imageUrl || "/placeholder.svg"}
                     alt={product.name}
                     fill
                     className={cn(
-                        "object-cover transition-all duration-500 group-hover:scale-110",
+                        "object-cover transition-all duration-700 ease-out group-hover:scale-110 group-hover:rotate-1",
                         imageLoaded ? "opacity-100" : "opacity-0",
                     )}
                     sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
@@ -90,19 +89,25 @@ export default function ProductCard({
                 {/* Overlay Elements */}
                 <div className="absolute top-2 left-2 flex flex-col space-y-1">
                     {cartQuantity > 0 && (
-                        <Badge className="bg-green-500 text-white animate-bounce shadow-lg">{cartQuantity} in cart</Badge>
+                        <Badge className="bg-green-500/90 backdrop-blur text-white animate-bounce shadow-lg">
+                            {cartQuantity} in cart
+                        </Badge>
                     )}
-                    <Badge className="bg-blue-500 text-white shadow-lg">New</Badge>
+                    <Badge className="bg-blue-600/90 text-white shadow">New</Badge>
                 </div>
 
-                <div className="absolute top-2 right-2 flex flex-col space-y-1">
+                <div className="absolute top-2 right-2 flex flex-col space-y-1 items-end">
+                    <div className="rounded-full bg-black/55 backdrop-blur px-3 py-1 text-xs font-semibold text-white shadow-lg flex items-center gap-1">
+                        <DollarSign className="h-3 w-3" />
+                        {typeof priceNumber === "number" ? priceNumber.toFixed(2) : priceNumber}
+                    </div>
                     <Button
                         variant="ghost"
                         size="sm"
                         onClick={handleLike}
                         className={cn(
-                            "h-8 w-8 rounded-full bg-white/80 backdrop-blur-sm transition-all duration-200",
-                            "hover:bg-white hover:scale-110 dark:bg-gray-800/80 dark:hover:bg-gray-800",
+                            "h-8 w-8 rounded-full bg-white/80 backdrop-blur transition-all duration-300",
+                            "hover:bg-white hover:scale-110 dark:bg-slate-800/80 dark:hover:bg-slate-800",
                             isLiked && "text-red-500",
                         )}
                     >
@@ -187,23 +192,22 @@ export default function ProductCard({
                 )}
             </CardContent>
 
-            <CardFooter className="p-4 pt-0 space-y-3">
-                {/* Action Buttons */}
-                <div className="flex space-x-2 w-full">
+            <CardFooter className="p-4 pt-0">
+                <div className="flex w-full gap-2">
                     <Button
                         onClick={handleAddToCart}
                         variant="outline"
-                        className="flex-1 transition-all duration-200 hover:scale-105 hover:bg-blue-50 hover:border-blue-300 dark:hover:bg-blue-900/20 dark:hover:border-blue-700 bg-transparent"
+                        className="flex-1 group/button relative overflow-hidden bg-transparent border-slate-300/70 dark:border-slate-600 hover:border-blue-400 hover:bg-blue-50 dark:hover:bg-slate-800"
                     >
                         <ShoppingCart className="h-4 w-4 mr-2" />
-                        Add to Cart
+                        Cart
                     </Button>
                     <Button
                         onClick={handlePlaceOrder}
-                        className="flex-1 transition-all duration-200 hover:scale-105 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 dark:from-blue-500 dark:to-purple-500"
+                        className="flex-1 bg-gradient-to-r from-blue-600 via-indigo-600 to-fuchsia-600 hover:from-blue-500 hover:via-indigo-500 hover:to-fuchsia-500 shadow-md shadow-blue-500/20"
                     >
                         <Package className="h-4 w-4 mr-2" />
-                        Order Now
+                        Order
                     </Button>
                 </div>
             </CardFooter>

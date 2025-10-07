@@ -27,7 +27,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         }
 
         // Check if the user's ID is in the list of admin chat IDs
-        const isAdmin = config.app.adminChatIds.includes(Number(user.id))
+        // In development mode, bypass the admin ID check to allow local access
+        const isAdmin = config.app.isDevelopment ? true : config.app.adminChatIds.includes(Number(user.id))
         telegramLogger.debug(`Admin check for user ${user.id}: ${isAdmin ? "Granted" : "Denied"}`, "AdminLayout")
 
         // --- DEBUGGING LOGS FOR ADMIN LAYOUT ---
@@ -59,7 +60,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
     // If not authenticated or not an admin, the useEffect will handle redirection.
     // Show a loading/denied state while redirecting or if there's a delay.
-    const isAdmin = user && config.app.adminChatIds.includes(Number(user.id))
+    const isAdmin = user && (config.app.isDevelopment ? true : config.app.adminChatIds.includes(Number(user.id)))
     if (!isAuthenticated || !user || !isAdmin) {
         return (
             <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4 text-center">

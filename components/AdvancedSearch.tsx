@@ -52,14 +52,14 @@ export default function AdvancedSearch({
     }
 
     return (
-        <div className="space-y-4 animate-fade-in">
+        <div className="space-y-5 animate-fade-in">
             {/* Main Search Bar */}
             <div className="relative group">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                     <Search
                         className={cn(
-                            "h-4 w-4 transition-colors duration-200",
-                            isSearching ? "text-blue-500 animate-pulse" : "text-gray-400 group-focus-within:text-blue-500",
+                            "h-5 w-5 transition-colors duration-200",
+                            isSearching ? "text-blue-600 animate-pulse" : "text-slate-400 group-focus-within:text-blue-600",
                         )}
                     />
                 </div>
@@ -67,14 +67,14 @@ export default function AdvancedSearch({
                     placeholder="Search products, flavors, occasions..."
                     value={filters.query || ""}
                     onChange={(e) => handleFilterChange("query", e.target.value)}
-                    className="pl-10 pr-12 h-12 text-lg border-2 transition-all duration-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-800"
+                    className="pl-11 pr-12 h-12 text-base rounded-xl border-slate-200 dark:border-slate-700 bg-white/80 dark:bg-slate-900/70 backdrop-blur focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-500 transition-all shadow-sm"
                 />
                 {filters.query && (
                     <Button
                         variant="ghost"
                         size="sm"
                         onClick={() => handleFilterChange("query", "")}
-                        className="absolute inset-y-0 right-0 px-3 hover:bg-transparent"
+                        className="absolute inset-y-0 right-0 px-3 hover:bg-transparent text-slate-500"
                     >
                         <X className="h-4 w-4" />
                     </Button>
@@ -83,15 +83,15 @@ export default function AdvancedSearch({
 
             {/* Quick Category Tabs */}
             {availableFilters.categories.length > 0 && (
-                <div className="bg-white dark:bg-gray-800 rounded-lg border dark:border-gray-700 p-4 shadow-sm">
+                <div className="bg-white/80 dark:bg-slate-900/60 backdrop-blur rounded-xl border border-slate-200 dark:border-slate-700 p-4 shadow-sm">
                     <Tabs
                         value={filters.category || "all"}
                         onValueChange={(value) => handleFilterChange("category", value === "all" ? "" : value)}
                     >
-                        <TabsList className="flex flex-nowrap overflow-x-auto scrollbar-hide bg-gray-100 dark:bg-gray-700 p-1 rounded-full">
+                        <TabsList className="flex flex-nowrap overflow-x-auto scrollbar-hide bg-slate-100 dark:bg-slate-800/70 p-1 rounded-full gap-1">
                             <TabsTrigger
                                 value="all"
-                                className="flex-shrink-0 rounded-full px-4 py-2 text-sm font-medium transition-colors data-[state=active]:bg-blue-500 data-[state=active]:text-white data-[state=active]:shadow-md hover:bg-blue-100 dark:hover:bg-gray-600 dark:data-[state=active]:bg-blue-700"
+                                className="flex-shrink-0 rounded-full px-4 py-2 text-xs sm:text-sm font-medium transition-colors data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-sm hover:bg-blue-100 dark:hover:bg-slate-700 dark:data-[state=active]:bg-indigo-600"
                             >
                                 All
                             </TabsTrigger>
@@ -99,7 +99,7 @@ export default function AdvancedSearch({
                                 <TabsTrigger
                                     key={category}
                                     value={category}
-                                    className="flex-shrink-0 rounded-full px-4 py-2 text-sm font-medium transition-colors data-[state=active]:bg-blue-500 data-[state=active]:text-white data-[state=active]:shadow-md hover:bg-blue-100 dark:hover:bg-gray-600 dark:data-[state=active]:bg-blue-700"
+                                    className="flex-shrink-0 rounded-full px-4 py-2 text-xs sm:text-sm font-medium transition-colors data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-sm hover:bg-blue-100 dark:hover:bg-slate-700 dark:data-[state=active]:bg-indigo-600"
                                 >
                                     {category}
                                 </TabsTrigger>
@@ -110,11 +110,11 @@ export default function AdvancedSearch({
             )}
 
             {/* Advanced Filters & Sort */}
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-3 justify-between">
                 <Button
                     variant="outline"
                     onClick={() => setIsExpanded(!isExpanded)}
-                    className="transition-all duration-200 hover:scale-105"
+                    className="transition-all rounded-lg duration-200 hover:scale-105 bg-white/70 dark:bg-slate-900/60 backdrop-blur border-slate-200 dark:border-slate-700"
                 >
                     <SlidersHorizontal className="h-4 w-4 mr-2" />
                     Advanced Filters
@@ -130,7 +130,7 @@ export default function AdvancedSearch({
                         variant="outline"
                         size="sm"
                         onClick={() => setShowSortOptions(!showSortOptions)}
-                        className="transition-all duration-200 hover:scale-105"
+                        className="transition-all rounded-lg duration-200 hover:scale-105 bg-white/70 dark:bg-slate-900/60 backdrop-blur border-slate-200 dark:border-slate-700"
                     >
                         <ArrowUpDown className="h-4 w-4 mr-1" />
                         Sort
@@ -147,7 +147,7 @@ export default function AdvancedSearch({
 
             {/* Sort Options */}
             {showSortOptions && (
-                <Card className="animate-slide-down">
+                <Card className="animate-slide-down border-slate-200 dark:border-slate-700 bg-white/80 dark:bg-slate-900/60 backdrop-blur rounded-xl">
                     <CardContent className="p-4">
                         <div className="flex items-center space-x-4">
                             <div className="flex-1">
@@ -187,7 +187,7 @@ export default function AdvancedSearch({
 
             {/* Advanced Filters Panel */}
             {isExpanded && (
-                <Card className="animate-slide-down">
+                <Card className="animate-slide-down border-slate-200 dark:border-slate-700 bg-white/80 dark:bg-slate-900/60 backdrop-blur rounded-xl">
                     <CardHeader className="pb-3">
                         <div className="flex justify-between items-center">
                             <CardTitle className="text-lg flex items-center">
@@ -217,7 +217,7 @@ export default function AdvancedSearch({
                                         variant={!filters.design ? "default" : "outline"}
                                         size="sm"
                                         onClick={() => handleFilterChange("design", "")}
-                                        className="transition-all duration-200 hover:scale-105"
+                                        className="transition-all duration-200 hover:scale-105 rounded-full"
                                     >
                                         All Designs
                                     </Button>
@@ -227,7 +227,7 @@ export default function AdvancedSearch({
                                             variant={filters.design === design ? "default" : "outline"}
                                             size="sm"
                                             onClick={() => handleFilterChange("design", design)}
-                                            className="transition-all duration-200 hover:scale-105"
+                                            className="transition-all duration-200 hover:scale-105 rounded-full"
                                         >
                                             {design}
                                         </Button>
@@ -245,7 +245,7 @@ export default function AdvancedSearch({
                                         variant={!filters.flavor ? "default" : "outline"}
                                         size="sm"
                                         onClick={() => handleFilterChange("flavor", "")}
-                                        className="transition-all duration-200 hover:scale-105"
+                                        className="transition-all duration-200 hover:scale-105 rounded-full"
                                     >
                                         All Flavors
                                     </Button>
@@ -255,7 +255,7 @@ export default function AdvancedSearch({
                                             variant={filters.flavor === flavor ? "default" : "outline"}
                                             size="sm"
                                             onClick={() => handleFilterChange("flavor", flavor)}
-                                            className="transition-all duration-200 hover:scale-105"
+                                            className="transition-all duration-200 hover:scale-105 rounded-full"
                                         >
                                             {flavor}
                                         </Button>
@@ -273,7 +273,7 @@ export default function AdvancedSearch({
                                         variant={!filters.occasion ? "default" : "outline"}
                                         size="sm"
                                         onClick={() => handleFilterChange("occasion", "")}
-                                        className="transition-all duration-200 hover:scale-105"
+                                        className="transition-all duration-200 hover:scale-105 rounded-full"
                                     >
                                         Any Occasion
                                     </Button>
@@ -283,7 +283,7 @@ export default function AdvancedSearch({
                                             variant={filters.occasion === occasion ? "default" : "outline"}
                                             size="sm"
                                             onClick={() => handleFilterChange("occasion", occasion)}
-                                            className="transition-all duration-200 hover:scale-105"
+                                            className="transition-all duration-200 hover:scale-105 rounded-full"
                                         >
                                             {occasion}
                                         </Button>
@@ -301,7 +301,7 @@ export default function AdvancedSearch({
                                         variant={!filters.size ? "default" : "outline"}
                                         size="sm"
                                         onClick={() => handleFilterChange("size", "")}
-                                        className="transition-all duration-200 hover:scale-105"
+                                        className="transition-all duration-200 hover:scale-105 rounded-full"
                                     >
                                         All Sizes
                                     </Button>
@@ -311,7 +311,7 @@ export default function AdvancedSearch({
                                             variant={filters.size === size ? "default" : "outline"}
                                             size="sm"
                                             onClick={() => handleFilterChange("size", size)}
-                                            className="transition-all duration-200 hover:scale-105"
+                                            className="transition-all duration-200 hover:scale-105 rounded-full"
                                         >
                                             {size}
                                         </Button>

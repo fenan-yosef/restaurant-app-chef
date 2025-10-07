@@ -6,6 +6,8 @@ const nextConfig: NextConfig = {
     domains: [
       // other hosts you already allow…
       'cdn4.cdn-telegram.org',
+      'api.telegram.org',
+      'storage-api-six.vercel.app',
     ],
     //—or, if you need more control:
     // remotePatterns: [

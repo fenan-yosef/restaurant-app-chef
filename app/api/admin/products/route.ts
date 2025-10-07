@@ -181,12 +181,13 @@ export async function PUT(request: NextRequest) {
         values.push(category)
     }
     if (photos !== undefined) {
-        updates.push(`photos = $${paramCount++}`)
-        values.push(photos)
+        updates.push(`photos = $${paramCount++}::jsonb`)
+        // Ensure we store valid JSONB (stringify arrays/objects)
+        values.push(typeof photos === 'string' ? photos : JSON.stringify(photos))
     }
     if (videos !== undefined) {
-        updates.push(`videos = $${paramCount++}`)
-        values.push(videos)
+        updates.push(`videos = $${paramCount++}::jsonb`)
+        values.push(typeof videos === 'string' ? videos : JSON.stringify(videos))
     }
     if (design !== undefined) {
         updates.push(`design = $${paramCount++}`)

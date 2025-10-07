@@ -1,12 +1,12 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useRef, useEffect } from "react"
 import Image from "next/image"
 import type { Product } from "@/lib/types"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardFooter } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { ShoppingCart, Heart, Star, Package, DollarSign } from "lucide-react"
+import { ShoppingCart, Heart, Star, Package, DollarSign, ArrowLeft, ArrowRight } from "lucide-react"
 import { useTelegram } from "@/hooks/useTelegram"
 import { getImageUrl } from "@/lib/product-parser"
 import { cn } from "@/lib/utils"
@@ -29,7 +29,13 @@ export default function ProductCard({
     className,
 }: ProductCardProps) {
     const [isLiked, setIsLiked] = useState(false)
+    // imageLoaded indicates the currently-visible slide has loaded
     const [imageLoaded, setImageLoaded] = useState(false)
+    // Carousel state
+    const [currentIndex, setCurrentIndex] = useState(0)
+    const touchStartX = useRef<number | null>(null)
+    const touchDeltaX = useRef(0)
+    const carouselRef = useRef<HTMLDivElement | null>(null)
     const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false) // New state for description
     const { hapticFeedback } = useTelegram()
 
@@ -48,8 +54,16 @@ export default function ProductCard({
         hapticFeedback("light")
     }
 
+    // Use all photos if available, otherwise fallback to placeholder
+    const photos = (product.photos && product.photos.length > 0) ? product.photos : ["/placeholder.svg"]
     const imageUrl = getImageUrl(product.photos)
     const priceNumber = Number.isNaN(Number(product.price)) ? product.price : Number(product.price)
+
+    // Determine if this is a "new" product (added recently)
+    // default threshold: 14 days
+    const NEW_DAYS_THRESHOLD = 14
+    const createdAt = product.created_at ? new Date(product.created_at) : null
+    const isNew = createdAt ? (Date.now() - createdAt.getTime()) <= NEW_DAYS_THRESHOLD * 24 * 60 * 60 * 1000 : false
 
     const renderHighlightedText = (text: string) => {
         if (highlightText) {
@@ -61,6 +75,44 @@ export default function ProductCard({
     // Heuristic to determine if "See more" is needed
     const needsSeeMore = (product.description?.length || 0) > 150 // Adjust character limit as needed
 
+    // Carousel helpers
+    const next = () => setCurrentIndex((i) => (i + 1) % photos.length)
+    const prev = () => setCurrentIndex((i) => (i - 1 + photos.length) % photos.length)
+
+    // keyboard left/right
+    useEffect(() => {
+        const el = carouselRef.current
+        if (!el) return
+        const onKey = (e: KeyboardEvent) => {
+            if (e.key === "ArrowRight") next()
+            if (e.key === "ArrowLeft") prev()
+        }
+        el.addEventListener("keydown", onKey)
+        return () => el.removeEventListener("keydown", onKey)
+    }, [photos.length])
+
+    // touch handlers
+    const onTouchStart = (e: React.TouchEvent) => {
+        touchStartX.current = e.touches[0].clientX
+        touchDeltaX.current = 0
+    }
+
+    const onTouchMove = (e: React.TouchEvent) => {
+        if (touchStartX.current === null) return
+        const x = e.touches[0].clientX
+        touchDeltaX.current = x - touchStartX.current
+    }
+
+    const onTouchEnd = () => {
+        const delta = touchDeltaX.current
+        if (Math.abs(delta) > 50) {
+            if (delta < 0) next()
+            else prev()
+        }
+        touchStartX.current = null
+        touchDeltaX.current = 0
+    }
+
     return (
         <Card
             className={cn(
@@ -69,34 +121,93 @@ export default function ProductCard({
                 className,
             )}
         >
-            <div className="relative overflow-hidden aspect-[4/3]">
+            <div
+                className="relative overflow-hidden aspect-[4/3]"
+                ref={carouselRef}
+                tabIndex={0}
+                onTouchStart={onTouchStart}
+                onTouchMove={onTouchMove}
+                onTouchEnd={onTouchEnd}
+            >
                 {!imageLoaded && (
                     <div className="absolute inset-0 bg-gradient-to-br from-slate-200 via-slate-100 to-slate-300 dark:from-slate-700 dark:via-slate-800 dark:to-slate-700 animate-pulse" />
                 )}
-                <Image
-                    src={imageUrl || "/placeholder.svg"}
-                    alt={product.name}
-                    fill
-                    className={cn(
-                        "object-cover transition-all duration-700 ease-out group-hover:scale-110 group-hover:rotate-1",
-                        imageLoaded ? "opacity-100" : "opacity-0",
-                    )}
-                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                    unoptimized
-                    onLoad={() => setImageLoaded(true)}
-                />
+
+                {/* Slides */}
+                <div className="absolute inset-0 flex transition-transform duration-500 ease-out" style={{ transform: `translateX(-${currentIndex * 100}%)` }}>
+                    {photos.map((p, idx) => (
+                        <div key={idx} className="relative flex-shrink-0 w-full h-full">
+                            <Image
+                                src={p || "/placeholder.svg"}
+                                alt={`${product.name} (${idx + 1})`}
+                                fill
+                                className={cn("object-cover transition-opacity duration-500", imageLoaded ? "opacity-100" : "opacity-0")}
+                                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                                unoptimized
+                                onLoad={() => setImageLoaded(true)}
+                                loading={idx === currentIndex ? "eager" : "lazy"}
+                            />
+                        </div>
+                    ))}
+                </div>
+
+                {/* Prev / Next controls for multi-image */}
+                {photos.length > 1 && (
+                    <>
+                        {/* left overlay - larger hit area */}
+                        <button
+                            aria-label="Previous image"
+                            onClick={prev}
+                            className="absolute left-0 top-0 bottom-0 w-1/3 flex items-center justify-center px-2 focus:outline-none z-10"
+                        >
+                            <div className="hidden sm:flex items-center justify-center h-12 w-12 rounded-full bg-white/80 dark:bg-slate-800/70 shadow-md hover:scale-105 transition-transform">
+                                <ArrowLeft className="h-5 w-5 text-slate-800 dark:text-white" />
+                            </div>
+                            <div className="sm:hidden absolute left-3 top-1/2 -translate-y-1/2 text-white text-2xl">‹</div>
+                            <div className="absolute left-0 top-0 bottom-0 w-24 bg-gradient-to-r from-black/20 to-transparent dark:from-white/5 pointer-events-none" />
+                        </button>
+
+                        {/* right overlay - larger hit area */}
+                        <button
+                            aria-label="Next image"
+                            onClick={next}
+                            className="absolute right-0 top-0 bottom-0 w-1/3 flex items-center justify-center px-2 focus:outline-none z-10"
+                        >
+                            <div className="hidden sm:flex items-center justify-center h-12 w-12 rounded-full bg-white/80 dark:bg-slate-800/70 shadow-md hover:scale-105 transition-transform">
+                                <ArrowRight className="h-5 w-5 text-slate-800 dark:text-white" />
+                            </div>
+                            <div className="sm:hidden absolute right-3 top-1/2 -translate-y-1/2 text-white text-2xl">›</div>
+                            <div className="absolute right-0 top-0 bottom-0 w-24 bg-gradient-to-l from-black/20 to-transparent dark:from-white/5 pointer-events-none" />
+                        </button>
+
+                        {/* indicators */}
+                        <div className="absolute left-1/2 -translate-x-1/2 bottom-3 flex items-center gap-2 z-10">
+                            {photos.map((_, i) => (
+                                <button
+                                    key={i}
+                                    aria-label={`Go to image ${i + 1}`}
+                                    onClick={() => setCurrentIndex(i)}
+                                    className={cn(
+                                        "h-2 w-8 rounded-full transition-colors",
+                                        i === currentIndex ? "bg-white dark:bg-slate-200" : "bg-white/40 dark:bg-slate-700/40",
+                                    )}
+                                />
+                            ))}
+                        </div>
+                    </>
+                )}
 
                 {/* Overlay Elements */}
-                <div className="absolute top-2 left-2 flex flex-col space-y-1">
+                <div className="absolute top-2 left-2 flex flex-col space-y-1 z-30">
                     {cartQuantity > 0 && (
                         <Badge className="bg-green-500/90 backdrop-blur text-white animate-bounce shadow-lg">
                             {cartQuantity} in cart
                         </Badge>
                     )}
-                    <Badge className="bg-blue-600/90 text-white shadow">New</Badge>
+                    {isNew && <Badge className="bg-blue-600/90 text-white shadow">New</Badge>}
                 </div>
 
-                <div className="absolute top-2 right-2 flex flex-col space-y-1 items-end">
+                <div className="absolute top-2 right-2 flex flex-col space-y-1 items-end z-30">
                     <div className="rounded-full bg-black/55 backdrop-blur px-3 py-1 text-xs font-semibold text-white shadow-lg flex items-center gap-1">
                         <DollarSign className="h-3 w-3" />
                         {typeof priceNumber === "number" ? priceNumber.toFixed(2) : priceNumber}
@@ -115,8 +226,8 @@ export default function ProductCard({
                     </Button>
                 </div>
 
-                {/* Gradient Overlay */}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                {/* Gradient Overlay (non-blocking) */}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
             </div>
 
             <CardContent className="p-4 space-y-3">
@@ -200,7 +311,7 @@ export default function ProductCard({
                         className="flex-1 group/button relative overflow-hidden bg-transparent border-slate-300/70 dark:border-slate-600 hover:border-blue-400 hover:bg-blue-50 dark:hover:bg-slate-800"
                     >
                         <ShoppingCart className="h-4 w-4 mr-2" />
-                        Cart
+                        Add
                     </Button>
                     <Button
                         onClick={handlePlaceOrder}

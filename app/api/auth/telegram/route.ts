@@ -54,7 +54,10 @@ export async function POST(request: NextRequest) {
             const user = result.rows[0]
 
             telegramLogger.info(`User authenticated (dev mode): ${user.id}`, "api/auth/telegram")
-            return NextResponse.json({ user, success: true })
+            const resDev = NextResponse.json({ user, success: true })
+            // set session cookie for subsequent requests
+            resDev.cookies.set('session_user', String(user.id), { httpOnly: true, path: '/', sameSite: 'lax', secure: process.env.NODE_ENV === 'production', maxAge: 60 * 60 * 24 * 30 })
+            return resDev
         }
 
         // Production validation
@@ -106,7 +109,9 @@ export async function POST(request: NextRequest) {
         const user = result.rows[0]
 
         telegramLogger.info(`User authenticated successfully: ${user.id}`, "api/auth/telegram")
-        return NextResponse.json({ user, success: true })
+        const res = NextResponse.json({ user, success: true })
+        res.cookies.set('session_user', String(user.id), { httpOnly: true, path: '/', sameSite: 'lax', secure: process.env.NODE_ENV === 'production', maxAge: 60 * 60 * 24 * 30 })
+        return res
     } catch (error: any) {
         telegramLogger.error(`Authentication failed: ${error.message}`, "api/auth/telegram")
         return NextResponse.json({ error: "Authentication failed" }, { status: 500 })

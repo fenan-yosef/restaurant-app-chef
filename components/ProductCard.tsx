@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from "react"
 import Image from "next/image"
 import type { Product } from "@/lib/types"
+import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardFooter } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -39,17 +40,21 @@ export default function ProductCard({
     const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false) // New state for description
     const { hapticFeedback } = useTelegram()
 
-    const handleAddToCart = () => {
+    const handleAddToCart = (e?: React.MouseEvent) => {
+        // Prevent navigation when clicking this button (card is clickable)
+        e?.stopPropagation()
         hapticFeedback("light")
         onAddToCart(product.id, 1)
     }
 
-    const handlePlaceOrder = () => {
+    const handlePlaceOrder = (e?: React.MouseEvent) => {
+        e?.stopPropagation()
         hapticFeedback("medium")
         onPlaceOrder(product.id, 1)
     }
 
-    const handleLike = () => {
+    const handleLike = (e?: React.MouseEvent) => {
+        e?.stopPropagation()
         setIsLiked(!isLiked)
         hapticFeedback("light")
     }
@@ -147,6 +152,10 @@ export default function ProductCard({
                                 onLoad={() => setImageLoaded(true)}
                                 loading={idx === currentIndex ? "eager" : "lazy"}
                             />
+                            {/* Wrap image area with link so clicking image goes to detail page */}
+                            {idx === currentIndex && (
+                                <Link href={`/products/${product.id}`} className="absolute inset-0" aria-label={`View details for ${product.name}`} />
+                            )}
                         </div>
                     ))}
                 </div>
@@ -215,7 +224,7 @@ export default function ProductCard({
                     <Button
                         variant="ghost"
                         size="sm"
-                        onClick={handleLike}
+                        onClick={(e) => handleLike(e)}
                         className={cn(
                             "h-8 w-8 rounded-full bg-white/80 backdrop-blur transition-all duration-300",
                             "hover:bg-white hover:scale-110 dark:bg-slate-800/80 dark:hover:bg-slate-800",
@@ -233,7 +242,9 @@ export default function ProductCard({
             <CardContent className="p-4 space-y-3">
                 <div className="flex justify-between items-start">
                     <h3 className="font-semibold text-lg line-clamp-2 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors duration-200">
-                        {renderHighlightedText(product.name)}
+                        <Link href={`/products/${product.id}`} className="inline-block hover:underline">
+                            {renderHighlightedText(product.name)}
+                        </Link>
                     </h3>
                     <Badge variant="secondary" className="shrink-0 ml-2 dark:bg-gray-700">
                         {product.category}
@@ -295,7 +306,7 @@ export default function ProductCard({
                     <Button
                         variant="link"
                         size="sm"
-                        onClick={() => setIsDescriptionExpanded(!isDescriptionExpanded)}
+                        onClick={(e) => { e.stopPropagation(); setIsDescriptionExpanded(!isDescriptionExpanded) }}
                         className="p-0 h-auto text-blue-600 dark:text-blue-400 hover:no-underline"
                     >
                         {isDescriptionExpanded ? "See less" : "See more"}
@@ -306,7 +317,7 @@ export default function ProductCard({
             <CardFooter className="p-4 pt-0">
                 <div className="flex w-full gap-2">
                     <Button
-                        onClick={handleAddToCart}
+                        onClick={(e) => handleAddToCart(e)}
                         variant="outline"
                         className="flex-1 group/button relative overflow-hidden bg-transparent border-slate-300/70 dark:border-slate-600 hover:border-blue-400 hover:bg-blue-50 dark:hover:bg-slate-800"
                     >
@@ -314,7 +325,7 @@ export default function ProductCard({
                         Add
                     </Button>
                     <Button
-                        onClick={handlePlaceOrder}
+                        onClick={(e) => handlePlaceOrder(e)}
                         className="flex-1 bg-gradient-to-r from-blue-600 via-indigo-600 to-fuchsia-600 hover:from-blue-500 hover:via-indigo-500 hover:to-fuchsia-500 shadow-md shadow-blue-500/20"
                     >
                         <Package className="h-4 w-4 mr-2" />

@@ -12,6 +12,7 @@ import ProductGridSkeleton from "@/components/LoadingStates/ProductGridSkeleton"
 
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
+import Link from "next/link"
 import { ShoppingCart, Clock, Sparkles, TrendingUp, Shield } from "lucide-react" // Import Shield icon
 import { formatCurrency, toNumber } from "@/lib/utils"
 import { config } from "@/lib/config" // Ensure config is imported
@@ -19,7 +20,7 @@ import { useAdvancedSearch } from "@/hooks/useAdvancedSearch" // Declare the use
 
 export default function Home() {
   const router = useRouter()
-  const { user, isAuthenticated, isLoading: authLoading } = useAuth()
+  const { user, isAuthenticated, isLoading: authLoading, isGuest } = useAuth()
   const {
     hapticFeedback,
     showMainButton,
@@ -88,7 +89,7 @@ export default function Home() {
   // Fetch cart items
   useEffect(() => {
     const fetchCart = async () => {
-      if (user) {
+      if (user && Number(user.id) > 0) {
         try {
           const response = await fetch(`/api/cart?userId=${user.id}`)
           if (response.ok) {
@@ -118,6 +119,21 @@ export default function Home() {
 
   const handleAddToCart = async (productId: number, quantity: number) => {
     if (!user) return
+
+    // If this is a browser guest session (negative id / explicit guest), keep local only
+    if (Number(user.id) < 0 || isGuest) {
+      // Let client-side cart logic handle local storage (useCart hook)
+      // But for this top-level page we simply show a friendly message and return
+      try {
+        hapticFeedback('light')
+        // dispatch a custom event so header badge may update via local cart
+        window.dispatchEvent(new CustomEvent('cart-optimistic', { detail: { delta: quantity } }))
+        // We don't have direct access to useCart here; rely on local events and localStorage
+        return
+      } catch (e) {
+        return
+      }
+    }
 
     try {
       const response = await fetch("/api/cart", {
@@ -327,18 +343,15 @@ export default function Home() {
                 <Clock className="h-4 w-4 mr-1" />
                 Orders
               </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => router.push("/cart")}
-                className="relative transition-all duration-200 hover:scale-105 rounded-lg shadow-sm"
-              >
-                <ShoppingCart className="h-4 w-4" />
-                {cartItems.length > 0 && (
-                  <Badge className="absolute -top-2 -right-2 h-5 w-5 p-0 text-xs animate-pulse bg-red-500">
-                    {cartItems.reduce((sum, item) => sum + item.quantity, 0)}
-                  </Badge>
-                )}
+              <Button asChild variant="outline" size="sm" className="relative transition-all duration-200 hover:scale-105 rounded-lg shadow-sm">
+                <Link id="cart-icon" href="/cart" className="inline-flex items-center relative">
+                  <ShoppingCart className="h-4 w-4" />
+                  {cartItems.length > 0 && (
+                    <span className="absolute -top-2 -right-2 flex items-center justify-center w-5 h-5 p-0 text-xs animate-pulse bg-red-500 text-white rounded-full font-semibold">
+                      {cartItems.reduce((sum, item) => sum + item.quantity, 0)}
+                    </span>
+                  )}
+                </Link>
               </Button>
             </div>
           </div>

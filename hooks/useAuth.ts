@@ -12,6 +12,7 @@ export function useAuth() {
     const [user, setUser] = useState<TelegramUser | null>(null)
     const [isAuthenticated, setIsAuthenticated] = useState(false)
     const [isLoading, setIsLoading] = useState(true)
+    const [isGuest, setIsGuest] = useState(false)
 
     useEffect(() => {
         const authenticate = async () => {
@@ -24,10 +25,12 @@ export function useAuth() {
             telegramLogger.debug(`WebApp initData: ${webApp?.initData ? "Present" : "N/A"}`, "useAuth")
 
             try {
-                // 1) If mockMode is enabled, use the mock user (development)
-                if (config.telegram.mockMode) {
-                    // Use mock authentication in development
-                    telegramLogger.debug("Attempting mock authentication...", "useAuth")
+                // 1) If mockMode is enabled AND explicitly requested, use the mock user (development)
+                // Use explicit URL param ?mock=1 or env var NEXT_PUBLIC_FORCE_MOCK_AUTH to opt-in to mock auth
+                const explicitMock = typeof window !== 'undefined' && (new URLSearchParams(window.location.search).get('mock') === '1' || process.env.NEXT_PUBLIC_FORCE_MOCK_AUTH === '1')
+                if (config.telegram.mockMode && explicitMock) {
+                    // Use mock authentication in development when explicitly requested
+                    telegramLogger.debug("Attempting mock authentication (explicit)...", "useAuth")
                     const result = await apiClient.authenticateUser("")
                     setUser(result.user)
                     setIsAuthenticated(true)
@@ -56,6 +59,8 @@ export function useAuth() {
                                     language_code: "en",
                                 }
                                 setUser(guestUser)
+                                // mark as guest so client code knows to keep cart local-only
+                                setIsGuest(true)
                                 setIsAuthenticated(true)
                                 telegramLogger.info("Guest/browser authentication enabled via URL param.", "useAuth")
                                 setIsLoading(false)
@@ -63,11 +68,12 @@ export function useAuth() {
                             }
                         }
 
-                        // Fallback to mock user if in development
-                        if (config.app.isDevelopment) {
+                        // Fallback to mock user in development only when explicitly requested
+                        const explicitMockFallback = typeof window !== 'undefined' && (new URLSearchParams(window.location.search).get('mock') === '1' || process.env.NEXT_PUBLIC_FORCE_MOCK_AUTH === '1')
+                        if (config.app.isDevelopment && explicitMockFallback) {
                             setUser({ ...config.telegram.mockUser, photo_url: "" })
                             setIsAuthenticated(true)
-                            telegramLogger.warn("Falling back to development mock user.", "useAuth")
+                            telegramLogger.warn("Falling back to development mock user (explicit).", "useAuth")
                         } else {
                             telegramLogger.error(
                                 "Authentication failed: Not in Telegram environment or missing initData in production.",
@@ -81,11 +87,12 @@ export function useAuth() {
             } catch (error: any) {
                 telegramLogger.error(`Authentication failed: ${error.message}`, "useAuth")
 
-                // Fallback to mock user in development
-                if (config.app.isDevelopment) {
+                // Fallback to mock user in development only when explicitly requested
+                const explicitMockErr = typeof window !== 'undefined' && (new URLSearchParams(window.location.search).get('mock') === '1' || process.env.NEXT_PUBLIC_FORCE_MOCK_AUTH === '1')
+                if (config.app.isDevelopment && explicitMockErr) {
                     setUser({ ...config.telegram.mockUser, photo_url: '' })
                     setIsAuthenticated(true)
-                    telegramLogger.warn("Authentication failed, but using fallback mock user in development.", "useAuth")
+                    telegramLogger.warn("Authentication failed, but using explicit fallback mock user in development.", "useAuth")
                 }
             }
 
@@ -97,5 +104,5 @@ export function useAuth() {
         }
     }, [webApp, telegramUser, telegramLoading])
 
-    return { user, isAuthenticated, isLoading: isLoading || telegramLoading }
+    return { user, isAuthenticated, isLoading: isLoading || telegramLoading, isGuest }
 }

@@ -120,6 +120,13 @@ export default function Home() {
           const products = data.products || data
           setAllProducts(products)
           setFilteredProducts(products)
+          // If server included is_liked on products, initialize likedProductIds from that
+          try {
+            const serverLiked = (products || []).filter((p: any) => typeof p.is_liked === 'boolean').map((p: any) => p.id)
+            if (serverLiked.length > 0) setLikedProductIds(serverLiked)
+          } catch (e) {
+            // ignore
+          }
         } else {
           console.error("Failed to fetch products: status", response.status)
           setAllProducts([])
@@ -144,14 +151,29 @@ export default function Home() {
     const loadCounts = async () => {
       try {
         if (!filteredProducts || filteredProducts.length === 0) return
-        const ids = filteredProducts.slice(0, Math.max(48, visibleCount)).map((p) => p.id)
-        const counts = await apiClient.getCountsForProducts(ids)
-        setLikeCounts(counts)
+        // Prefer server-provided like_count when available
+        const slice = filteredProducts.slice(0, Math.max(48, visibleCount))
+        const countsFromProducts: Record<number, number> = {}
+        const idsMissingCount: number[] = []
+        slice.forEach((p) => {
+          if (typeof p.like_count === 'number') countsFromProducts[p.id] = p.like_count
+          else idsMissingCount.push(p.id)
+        })
 
-        // If authenticated, fetch liked products for user to mark is_liked
+        if (idsMissingCount.length > 0) {
+          const fetched = await apiClient.getCountsForProducts(idsMissingCount)
+          setLikeCounts({ ...countsFromProducts, ...fetched })
+        } else {
+          setLikeCounts(countsFromProducts)
+        }
+
+        // If authenticated, fetch liked products for user to mark is_liked only if server didn't provide it
         try {
-          const liked = await apiClient.getLikedProductsForUser()
-          setLikedProductIds(liked.map((p: any) => p.id))
+          const anyHasIsLiked = filteredProducts.some((p) => typeof p.is_liked === 'boolean')
+          if (!anyHasIsLiked) {
+            const liked = await apiClient.getLikedProductsForUser()
+            setLikedProductIds(liked.map((p: any) => p.id))
+          }
         } catch (err) {
           // ignore (guest or not authenticated)
         }
@@ -551,8 +573,8 @@ export default function Home() {
                         onAddToCart={handleAddToCart}
                         onPlaceOrder={handlePlaceOrder}
                         cartQuantity={getCartQuantity(product.id)}
-                        likeCount={likeCounts[product.id] ?? null}
-                        isLiked={likedProductIds.includes(product.id)}
+                        likeCount={typeof (product as any).like_count === 'number' ? (product as any).like_count : (likeCounts[product.id] ?? null)}
+                        isLiked={typeof (product as any).is_liked === 'boolean' ? (product as any).is_liked : likedProductIds.includes(product.id)}
                         highlightText={filters.query ? ((text: string) => highlightText(text, filters.query)) : undefined}
                         className="animate-fade-in"
                       />

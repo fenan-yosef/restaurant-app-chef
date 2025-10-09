@@ -81,7 +81,7 @@ export async function GET(request: NextRequest) {
         console.log("Executing query:", query)
         console.log("With values:", values)
 
-    const result = await pool.query(query, values)
+        const result = await pool.query(query, values)
 
         // Get total count for pagination
         let countQuery = `
@@ -132,21 +132,26 @@ export async function GET(request: NextRequest) {
         const countResult = await pool.query(countQuery, countValues)
         const total = Number.parseInt(countResult.rows[0].total)
 
-        // Enrich products with is_liked when possible
+        // Enrich products with is_liked and like_count when possible
         const products = result.rows
 
         try {
+            const ids = products.map((p: any) => p.id)
+            // Fetch counts for all returned ids
+            const countsRes = ids.length > 0 ? await pool.query(`SELECT product_id, COUNT(*)::int as count FROM likes WHERE product_id = ANY($1::int[]) GROUP BY product_id`, [ids]) : { rows: [] }
+            const countsMap: Record<number, number> = {}
+            countsRes.rows.forEach((r: any) => { countsMap[Number(r.product_id)] = Number(r.count) })
+
             const cookieUser = request.cookies.get('session_user')
             if (cookieUser && cookieUser.value && products.length > 0) {
                 const uid = Number(cookieUser.value)
                 if (!Number.isNaN(uid)) {
-                    const ids = products.map((p: any) => p.id)
                     const likesRes = await pool.query(
                         `SELECT product_id FROM likes WHERE product_id = ANY($1::int[]) AND user_id = $2`,
                         [ids, uid]
                     )
                     const likedSet = new Set(likesRes.rows.map((r: any) => Number(r.product_id)))
-                    const enriched = products.map((p: any) => ({ ...p, is_liked: likedSet.has(Number(p.id)) }))
+                    const enriched = products.map((p: any) => ({ ...p, is_liked: likedSet.has(Number(p.id)), like_count: countsMap[Number(p.id)] || 0 }))
                     return NextResponse.json({
                         products: enriched,
                         pagination: {
@@ -159,20 +164,33 @@ export async function GET(request: NextRequest) {
                     })
                 }
             }
-        } catch (err) {
-            console.warn('Failed to enrich products with is_liked', err)
-        }
 
-        return NextResponse.json({
-            products: products.map((p: any) => ({ ...p, is_liked: false })),
-            pagination: {
-                page,
-                limit,
-                total,
-                totalPages: Math.ceil(total / limit),
-                hasMore: page * limit < total,
-            },
-        })
+            // Guest or failed path: attach like_count and default is_liked to false
+            const enrichedGuest = products.map((p: any) => ({ ...p, is_liked: false, like_count: countsMap[Number(p.id)] || 0 }))
+            return NextResponse.json({
+                products: enrichedGuest,
+                pagination: {
+                    page,
+                    limit,
+                    total,
+                    totalPages: Math.ceil(total / limit),
+                    hasMore: page * limit < total,
+                },
+            })
+        } catch (err) {
+            console.warn('Failed to enrich products with is_liked/like_count', err)
+            // Fall back to products without enrichment
+            return NextResponse.json({
+                products: products.map((p: any) => ({ ...p, is_liked: false })),
+                pagination: {
+                    page,
+                    limit,
+                    total,
+                    totalPages: Math.ceil(total / limit),
+                    hasMore: page * limit < total,
+                },
+            })
+        }
     } catch (error) {
         console.error("Products fetch error:", error)
         const errorMessage = error instanceof Error ? error.message : "Unknown error"

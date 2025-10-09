@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation"
+import { cookies } from 'next/headers'
 import Image from "next/image"
 import ProductGallery from "@/components/ProductGallery"
 import ProductTopBar from "@/components/ProductTopBar"
@@ -34,6 +35,28 @@ export default async function ProductPage(props: any) {
     const { id } = params || {}
     const product = await fetchProduct(id)
     if (!product) return notFound()
+
+    // Try to determine if the current session user liked this product
+    try {
+        const cookieStore = await cookies()
+        const sessionUser = cookieStore.get('session_user')
+        if (sessionUser && sessionUser.value) {
+            const uid = Number(sessionUser.value)
+            if (!Number.isNaN(uid)) {
+                const likeRes = await pool.query('SELECT 1 FROM likes WHERE product_id = $1 AND user_id = $2 LIMIT 1', [product.id, uid])
+                    ; (product as any).is_liked = likeRes.rows.length > 0
+                const countRes = await pool.query('SELECT COUNT(*) as count FROM likes WHERE product_id = $1', [product.id])
+                    ; (product as any).like_count = Number(countRes.rows[0]?.count || 0)
+            }
+        } else {
+            ; (product as any).is_liked = false
+            const countRes = await pool.query('SELECT COUNT(*) as count FROM likes WHERE product_id = $1', [product.id])
+                ; (product as any).like_count = Number(countRes.rows[0]?.count || 0)
+        }
+    } catch (err) {
+        console.warn('Failed to determine is_liked for product detail', err)
+            ; (product as any).is_liked = false
+    }
 
     const photos = (product.photos && product.photos.length) ? product.photos : ["/placeholder.svg"]
 

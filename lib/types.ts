@@ -82,6 +82,9 @@ export interface Product {
     stock: number
     created_at: string
     updated_at: string
+    // Optional fields added by APIs
+    is_liked?: boolean
+    like_count?: number
 }
 
 export interface ParsedProductInfo {

@@ -90,7 +90,9 @@ class ApiClient {
 
         const response = await this.fetchWithTimeout(`${this.baseUrl}/products?${params}`)
         if (!response.ok) throw new Error("Failed to fetch products")
-        return response.json()
+        const data = await response.json()
+        // API returns { products, pagination } in server mode; normalize to return Product[] consistently
+        return data?.products || data || []
     }
 
     // Cart API

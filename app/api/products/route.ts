@@ -81,7 +81,7 @@ export async function GET(request: NextRequest) {
         console.log("Executing query:", query)
         console.log("With values:", values)
 
-        const result = await pool.query(query, values)
+    const result = await pool.query(query, values)
 
         // Get total count for pagination
         let countQuery = `
@@ -132,8 +132,39 @@ export async function GET(request: NextRequest) {
         const countResult = await pool.query(countQuery, countValues)
         const total = Number.parseInt(countResult.rows[0].total)
 
+        // Enrich products with is_liked when possible
+        const products = result.rows
+
+        try {
+            const cookieUser = request.cookies.get('session_user')
+            if (cookieUser && cookieUser.value && products.length > 0) {
+                const uid = Number(cookieUser.value)
+                if (!Number.isNaN(uid)) {
+                    const ids = products.map((p: any) => p.id)
+                    const likesRes = await pool.query(
+                        `SELECT product_id FROM likes WHERE product_id = ANY($1::int[]) AND user_id = $2`,
+                        [ids, uid]
+                    )
+                    const likedSet = new Set(likesRes.rows.map((r: any) => Number(r.product_id)))
+                    const enriched = products.map((p: any) => ({ ...p, is_liked: likedSet.has(Number(p.id)) }))
+                    return NextResponse.json({
+                        products: enriched,
+                        pagination: {
+                            page,
+                            limit,
+                            total,
+                            totalPages: Math.ceil(total / limit),
+                            hasMore: page * limit < total,
+                        },
+                    })
+                }
+            }
+        } catch (err) {
+            console.warn('Failed to enrich products with is_liked', err)
+        }
+
         return NextResponse.json({
-            products: result.rows,
+            products: products.map((p: any) => ({ ...p, is_liked: false })),
             pagination: {
                 page,
                 limit,

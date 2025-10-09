@@ -161,3 +161,8 @@ export const mockOrders: Order[] = [
         ],
     },
 ]
+
+// Simple in-memory likes for mock mode (user_id => Set of product ids)
+export const mockLikes: Record<number, Set<number>> = {
+    [mockUser.id]: new Set([2, 4]),
+}

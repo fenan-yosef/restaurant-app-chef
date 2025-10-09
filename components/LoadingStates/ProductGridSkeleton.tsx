@@ -7,9 +7,9 @@ interface ProductGridSkeletonProps {
 
 export default function ProductGridSkeleton({ count = 6 }: ProductGridSkeletonProps) {
     return (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 p-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4 p-2 sm:p-4">
             {Array.from({ length: count }).map((_, index) => (
-                <Card key={index} className="flex flex-col animate-pulse">
+                <Card key={index} className="flex flex-col animate-pulse w-full max-w-full">
                     <CardHeader className="p-0">
                         <Skeleton className="w-full aspect-square rounded-t-lg" />
                     </CardHeader>

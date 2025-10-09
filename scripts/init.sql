@@ -61,3 +61,12 @@ CREATE TABLE IF NOT EXISTS order_items (
   quantity   INTEGER NOT NULL,
   price      NUMERIC(10,2) NOT NULL
 );
+
+-- likes
+CREATE TABLE IF NOT EXISTS likes (
+  id         SERIAL PRIMARY KEY,
+  user_id    BIGINT NOT NULL REFERENCES users(id),
+  product_id INTEGER NOT NULL REFERENCES products(id),
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
+  UNIQUE(user_id, product_id)
+);

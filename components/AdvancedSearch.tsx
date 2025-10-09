@@ -52,7 +52,7 @@ export default function AdvancedSearch({
     }
 
     return (
-        <div className="space-y-5 animate-fade-in">
+        <div className="space-y-5 animate-fade-in min-w-0">
             {/* Main Search Bar */}
             <div className="relative group">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -83,15 +83,15 @@ export default function AdvancedSearch({
 
             {/* Quick Category Tabs */}
             {availableFilters.categories.length > 0 && (
-                <div className="bg-white/80 dark:bg-slate-900/60 backdrop-blur rounded-xl border border-slate-200 dark:border-slate-700 p-4 shadow-sm">
+                <div className="bg-white/80 dark:bg-slate-900/60 backdrop-blur rounded-xl border border-slate-200 dark:border-slate-700 p-4 shadow-sm w-full overflow-hidden">
                     <Tabs
                         value={filters.category || "all"}
                         onValueChange={(value) => handleFilterChange("category", value === "all" ? "" : value)}
                     >
-                        <TabsList className="flex flex-nowrap overflow-x-auto scrollbar-hide bg-slate-100 dark:bg-slate-800/70 p-1 rounded-full gap-1">
+                        <TabsList className="flex flex-nowrap w-full max-w-full overflow-x-auto overscroll-x-contain scrollbar-hide bg-slate-100 dark:bg-slate-800/70 p-1 rounded-full gap-1 -mx-1 px-1">
                             <TabsTrigger
                                 value="all"
-                                className="flex-shrink-0 rounded-full px-4 py-2 text-xs sm:text-sm font-medium transition-colors data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-sm hover:bg-blue-100 dark:hover:bg-slate-700 dark:data-[state=active]:bg-indigo-600"
+                                className="flex-shrink-0 whitespace-nowrap rounded-full px-4 py-2 text-xs sm:text-sm font-medium transition-colors data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-sm hover:bg-blue-100 dark:hover:bg-slate-700 dark:data-[state=active]:bg-indigo-600"
                             >
                                 All
                             </TabsTrigger>
@@ -99,7 +99,7 @@ export default function AdvancedSearch({
                                 <TabsTrigger
                                     key={category}
                                     value={category}
-                                    className="flex-shrink-0 rounded-full px-4 py-2 text-xs sm:text-sm font-medium transition-colors data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-sm hover:bg-blue-100 dark:hover:bg-slate-700 dark:data-[state=active]:bg-indigo-600"
+                                    className="flex-shrink-0 whitespace-nowrap rounded-full px-4 py-2 text-xs sm:text-sm font-medium transition-colors data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-sm hover:bg-blue-100 dark:hover:bg-slate-700 dark:data-[state=active]:bg-indigo-600"
                                 >
                                     {category}
                                 </TabsTrigger>
@@ -110,7 +110,7 @@ export default function AdvancedSearch({
             )}
 
             {/* Advanced Filters & Sort */}
-            <div className="flex flex-col sm:flex-row sm:items-center gap-3 justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-3 justify-between min-w-0">
                 <Button
                     variant="outline"
                     onClick={() => setIsExpanded(!isExpanded)}

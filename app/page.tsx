@@ -13,10 +13,11 @@ import ProductGridSkeleton from "@/components/LoadingStates/ProductGridSkeleton"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import Link from "next/link"
-import { ShoppingCart, Clock, Sparkles, TrendingUp, Shield } from "lucide-react" // Import Shield icon
+import { ShoppingCart, Clock, Sparkles, TrendingUp, Shield, Heart } from "lucide-react" // Import Shield icon and Heart
 import { formatCurrency, toNumber } from "@/lib/utils"
 import { config } from "@/lib/config" // Ensure config is imported
 import { useDebounce } from "@/hooks/useDebounce"
+import { apiClient } from "@/lib/api-client"
 
 export default function Home() {
   const router = useRouter()
@@ -57,6 +58,8 @@ export default function Home() {
   })
   const debouncedQuery = useDebounce(filters.query || "", 300)
   const [isFetching, setIsFetching] = useState(false)
+  const [likeCounts, setLikeCounts] = useState<Record<number, number>>({})
+  const [likedProductIds, setLikedProductIds] = useState<number[]>([])
 
   const updateFilter = (key: string, value: any) => {
     setFilters((prev: any) => ({ ...prev, [key]: value }))
@@ -136,24 +139,52 @@ export default function Home() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [debouncedQuery, filters.category, filters.design, filters.flavor, filters.occasion, filters.size, filters.sortBy, filters.sortOrder])
 
-  // Fetch cart items
+  // Fetch like counts in batch for visible products
   useEffect(() => {
-    const fetchCart = async () => {
-      if (user && Number(user.id) > 0) {
+    const loadCounts = async () => {
+      try {
+        if (!filteredProducts || filteredProducts.length === 0) return
+        const ids = filteredProducts.slice(0, Math.max(48, visibleCount)).map((p) => p.id)
+        const counts = await apiClient.getCountsForProducts(ids)
+        setLikeCounts(counts)
+
+        // If authenticated, fetch liked products for user to mark is_liked
         try {
-          const response = await fetch(`/api/cart?userId=${user.id}`)
-          if (response.ok) {
-            const data = await response.json()
-            setCartItems(data)
-          }
-        } catch (error) {
-          console.error("Failed to fetch cart:", error)
+          const liked = await apiClient.getLikedProductsForUser()
+          setLikedProductIds(liked.map((p: any) => p.id))
+        } catch (err) {
+          // ignore (guest or not authenticated)
         }
+      } catch (err) {
+        console.error('Failed to load like counts', err)
       }
     }
 
-    fetchCart()
-  }, [user])
+    loadCounts()
+
+    // listen for likes-updated events from ProductCard optimistic updates
+    const onLikesUpdated = (e: Event) => {
+      try {
+        const detail: any = (e as CustomEvent).detail || {}
+        const { productId, count, isLiked } = detail
+        if (typeof productId !== 'number') return
+        setLikeCounts((prev) => ({ ...prev, [productId]: typeof count === 'number' ? count : prev[productId] }))
+        setLikedProductIds((prev) => {
+          if (isLiked === true) return Array.from(new Set([...prev, productId]))
+          if (isLiked === false) return prev.filter((id) => id !== productId)
+          return prev
+        })
+      } catch (err) {
+        // ignore
+      }
+    }
+
+    if (typeof window !== 'undefined') window.addEventListener('likes-updated', onLikesUpdated)
+
+    return () => {
+      if (typeof window !== 'undefined') window.removeEventListener('likes-updated', onLikesUpdated)
+    }
+  }, [filteredProducts, visibleCount])
 
   // Update main button based on cart
   useEffect(() => {
@@ -358,12 +389,12 @@ export default function Home() {
 
   // Main app content when authenticated
   return (
-    <div className="min-h-screen mx-auto max-w-[1450px] px-2 sm:px-4">
+    <div className="min-h-screen mx-auto max-w-[1450px] w-full px-2 sm:px-4 overflow-x-hidden">
       {/* Header */}
       <div className="sticky top-0 z-20 backdrop-blur-xl supports-[backdrop-filter]:bg-white/70 dark:supports-[backdrop-filter]:bg-slate-900/60 border-b border-slate-200/70 dark:border-slate-700/60">
         <div className="px-2 sm:px-4 py-4">
-          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-            <div className="space-y-1">
+          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between min-w-0">
+            <div className="space-y-1 min-w-0">
               <div className="flex items-center gap-2">
                 <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight gradient-text flex items-center">
                   🥖 Chef Figoz Bakery
@@ -374,7 +405,7 @@ export default function Home() {
               </div>
               <p className="text-sm text-slate-600 dark:text-slate-400">Welcome back, <span className="font-medium text-blue-600 dark:text-blue-400">{user?.first_name}</span>! ✨</p>
             </div>
-            <div className="flex space-x-2 self-start md:self-auto">
+            <div className="flex flex-wrap items-center gap-2 self-start md:self-auto min-w-0">
               <Button
                 variant={isAdmin ? "outline" : "ghost"}
                 size="sm"
@@ -392,6 +423,12 @@ export default function Home() {
               >
                 <Clock className="h-4 w-4 mr-1" />
                 Orders
+              </Button>
+              <Button asChild variant="outline" size="sm" className="transition-all duration-200 hover:scale-105 rounded-lg shadow-sm">
+                <Link href="/liked" className="inline-flex items-center">
+                  <Heart className="h-4 w-4 mr-1" />
+                  Favorites
+                </Link>
               </Button>
               <Button asChild variant="outline" size="sm" className="relative transition-all duration-200 hover:scale-105 rounded-lg shadow-sm">
                 <Link id="cart-icon" href="/cart" className="inline-flex items-center relative">
@@ -438,11 +475,11 @@ export default function Home() {
                 </Badge>
               </div>
 
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <select
                   value={filters.category || ""}
                   onChange={(e) => updateFilter("category", e.target.value)}
-                  className="h-9 rounded border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm px-3"
+                  className="w-full sm:w-auto h-9 rounded border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm px-3"
                 >
                   <option value="">All categories</option>
                   {availableFilters.categories.map((c: string) => (
@@ -453,7 +490,7 @@ export default function Home() {
                 <select
                   value={filters.sortBy}
                   onChange={(e) => updateFilter("sortBy", e.target.value)}
-                  className="h-9 rounded border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm px-3"
+                  className="w-full sm:w-auto h-9 rounded border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm px-3"
                 >
                   <option value="created_at">Newest</option>
                   <option value="name">Name</option>
@@ -463,7 +500,7 @@ export default function Home() {
                 <select
                   value={filters.sortOrder}
                   onChange={(e) => updateFilter("sortOrder", e.target.value)}
-                  className="h-9 rounded border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm px-3"
+                  className="w-full sm:w-auto h-9 rounded border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm px-3"
                 >
                   <option value="desc">Desc</option>
                   <option value="asc">Asc</option>
@@ -474,7 +511,7 @@ export default function Home() {
                     variant="ghost"
                     size="sm"
                     onClick={clearFilters}
-                    className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                    className="w-full sm:w-auto text-red-600 hover:text-red-700 hover:bg-red-50"
                   >
                     Clear All Filters
                   </Button>
@@ -506,7 +543,7 @@ export default function Home() {
               </div>
             ) : (
               <>
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
+                <div className="grid w-full grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
                   {filteredProducts.slice(0, visibleCount).map((product, index) => (
                     <div key={product.id} style={{ animationDelay: `${index * 0.1}s` } as React.CSSProperties}>
                       <ProductCard
@@ -514,6 +551,8 @@ export default function Home() {
                         onAddToCart={handleAddToCart}
                         onPlaceOrder={handlePlaceOrder}
                         cartQuantity={getCartQuantity(product.id)}
+                        likeCount={likeCounts[product.id] ?? null}
+                        isLiked={likedProductIds.includes(product.id)}
                         highlightText={filters.query ? ((text: string) => highlightText(text, filters.query)) : undefined}
                         className="animate-fade-in"
                       />

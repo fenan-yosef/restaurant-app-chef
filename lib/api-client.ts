@@ -7,11 +7,27 @@
 
 import { config } from "./config"
 import { mockProducts, mockCartItems, mockOrders, mockUser } from "./mock-data"
+import { mockLikes } from "./mock-data"
 import type { Product, CartItem, Order, TelegramUser } from "./types"
 
 class ApiClient {
     private baseUrl: string
     private timeout: number
+
+    // Helper to decide whether to use mock mode at runtime. Allows forcing real API via URL param or env var.
+    private useMock(): boolean {
+        if (!config.telegram.mockMode) return false
+        try {
+            if (typeof window !== 'undefined') {
+                const params = new URLSearchParams(window.location.search)
+                if (params.get('realapi') === '1') return false
+            }
+        } catch (e) {
+            // ignore
+        }
+        if (process.env.NEXT_PUBLIC_FORCE_REAL_API === '1') return false
+        return true
+    }
 
     constructor() {
         this.baseUrl = config.api.baseUrl
@@ -169,6 +185,92 @@ class ApiClient {
 
         if (!response.ok) throw new Error("Authentication failed")
         return response.json()
+    }
+
+    // Likes API (mock support)
+    async getLikesForProduct(productId: number, userId?: number): Promise<{ count: number; is_liked: boolean }> {
+        if (this.useMock()) {
+            const count = Object.values(mockLikes).reduce((sum, set) => sum + (set.has(productId) ? 1 : 0), 0)
+            const is_liked = !!(userId && mockLikes[userId] && mockLikes[userId].has(productId))
+            return Promise.resolve({ count, is_liked })
+        }
+
+        // Include credentials so session cookie (session_user) is sent with the request
+        const response = await this.fetchWithTimeout(`${this.baseUrl}/likes?productId=${productId}`, {
+            credentials: 'include',
+        })
+        if (!response.ok) throw new Error("Failed to fetch likes")
+        return response.json()
+    }
+
+    async likeProduct(productId: number): Promise<{ count: number; is_liked: boolean }> {
+        if (this.useMock()) {
+            const uid = mockUser.id
+            mockLikes[uid] = mockLikes[uid] || new Set()
+            mockLikes[uid].add(productId)
+            const count = Object.values(mockLikes).reduce((sum, set) => sum + (set.has(productId) ? 1 : 0), 0)
+            return Promise.resolve({ count, is_liked: true })
+        }
+
+        const response = await this.fetchWithTimeout(`${this.baseUrl}/likes`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ productId }),
+            credentials: 'include',
+        })
+
+        if (!response.ok) throw new Error("Failed to like product")
+        return response.json()
+    }
+
+    async unlikeProduct(productId: number): Promise<{ count: number; is_liked: boolean }> {
+        if (this.useMock()) {
+            const uid = mockUser.id
+            mockLikes[uid] = mockLikes[uid] || new Set()
+            mockLikes[uid].delete(productId)
+            const count = Object.values(mockLikes).reduce((sum, set) => sum + (set.has(productId) ? 1 : 0), 0)
+            return Promise.resolve({ count, is_liked: false })
+        }
+
+        const response = await this.fetchWithTimeout(`${this.baseUrl}/likes?productId=${productId}`, {
+            method: "DELETE",
+            credentials: 'include',
+        })
+
+        if (!response.ok) throw new Error("Failed to unlike product")
+        return response.json()
+    }
+
+    // Batch fetch counts for multiple product IDs
+    async getCountsForProducts(productIds: number[]): Promise<Record<number, number>> {
+        if (this.useMock()) {
+            const map: Record<number, number> = {}
+            productIds.forEach((id) => {
+                map[id] = Object.values(mockLikes).reduce((sum, set) => sum + (set.has(id) ? 1 : 0), 0)
+            })
+            return Promise.resolve(map)
+        }
+
+        if (productIds.length === 0) return Promise.resolve({})
+        const ids = productIds.join(',')
+        const res = await this.fetchWithTimeout(`${this.baseUrl}/likes?ids=${ids}`)
+        if (!res.ok) throw new Error('Failed to fetch like counts')
+        const data = await res.json()
+        return data.counts || {}
+    }
+
+    // Get liked product ids for current authenticated user
+    async getLikedProductsForUser(): Promise<any[]> {
+        if (this.useMock()) {
+            const uid = mockUser.id
+            const ids = Array.from(mockLikes[uid] || new Set())
+            // return product objects
+            return Promise.resolve(mockProducts.filter((p) => ids.includes(p.id)))
+        }
+
+        const res = await this.fetchWithTimeout(`${this.baseUrl}/likes`, { credentials: 'include' })
+        if (!res.ok) throw new Error('Failed to fetch liked products')
+        return res.json()
     }
 }
 

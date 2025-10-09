@@ -86,7 +86,7 @@ const developmentConfig: Partial<AppConfig> = {
         botToken: process.env.TELEGRAM_BOT_TOKEN || "dev-token",
         mockMode: true,
         mockUser: {
-            id: 12345,
+            id: 856048902,
             first_name: "Test",
             last_name: "User",
             username: "testuser",

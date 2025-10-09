@@ -61,8 +61,21 @@ export async function GET(request: NextRequest) {
             values.push(`%${search}%`)
         }
 
-        // Add ordering and pagination
-        query += ` ORDER BY created_at DESC LIMIT $${paramCount + 1} OFFSET $${paramCount + 2}`
+                // Sorting: allow sortBy and sortOrder as query params (whitelist)
+                const sortBy = searchParams.get("sortBy") || "created_at"
+                const sortOrder = (searchParams.get("sortOrder") || "desc").toLowerCase() === "asc" ? "ASC" : "DESC"
+                const allowedSortColumns: Record<string, string> = {
+                    id: "id",
+                    name: "LOWER(name)",
+                    price: "price",
+                    category: "LOWER(category)",
+                    created_at: "created_at",
+                    updated_at: "updated_at",
+                }
+                const sortColumn = allowedSortColumns[sortBy] || allowedSortColumns["created_at"]
+
+                // Add ordering and pagination
+                query += ` ORDER BY ${sortColumn} ${sortOrder} LIMIT $${paramCount + 1} OFFSET $${paramCount + 2}`
         values.push(limit, offset)
 
         console.log("Executing query:", query)

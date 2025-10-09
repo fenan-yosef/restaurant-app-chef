@@ -16,7 +16,7 @@ import Link from "next/link"
 import { ShoppingCart, Clock, Sparkles, TrendingUp, Shield } from "lucide-react" // Import Shield icon
 import { formatCurrency, toNumber } from "@/lib/utils"
 import { config } from "@/lib/config" // Ensure config is imported
-import { useAdvancedSearch } from "@/hooks/useAdvancedSearch" // Declare the useAdvancedSearch hook
+import { useDebounce } from "@/hooks/useDebounce"
 
 export default function Home() {
   const router = useRouter()
@@ -33,6 +33,7 @@ export default function Home() {
   const [visibleCount, setVisibleCount] = useState(20) // render first 20 products
   const loadMoreRef = useRef<HTMLDivElement>(null)
   const [allProducts, setAllProducts] = useState<Product[]>([])
+  const [filteredProducts, setFilteredProducts] = useState<Product[]>([])
   const [cartItems, setCartItems] = useState<CartItem[]>([])
   const [availableFilters, setAvailableFilters] = useState({
     categories: [],
@@ -43,12 +44,38 @@ export default function Home() {
     priceRange: { min: 0, max: 100 },
   })
   const [isLoading, setIsLoading] = useState(true)
-
-  // Advanced search hook
-  const { filters, filteredProducts, updateFilter, clearFilters, highlightText, isSearching } = useAdvancedSearch({
-    products: allProducts,
-    initialFilters: {},
+  // Filters state (server-driven)
+  const [filters, setFilters] = useState<any>({
+    query: "",
+    category: "",
+    design: "",
+    flavor: "",
+    occasion: "",
+    size: "",
+    sortBy: "created_at",
+    sortOrder: "desc",
   })
+  const debouncedQuery = useDebounce(filters.query || "", 300)
+  const [isFetching, setIsFetching] = useState(false)
+
+  const updateFilter = (key: string, value: any) => {
+    setFilters((prev: any) => ({ ...prev, [key]: value }))
+    // reset visible count to page start when filters change
+    setVisibleCount(20)
+  }
+
+  const clearFilters = () => {
+    setFilters({ query: "", category: "", design: "", flavor: "", occasion: "", size: "", sortBy: "created_at", sortOrder: "desc" })
+    setVisibleCount(20)
+  }
+
+  const highlightText = (text: string, query: string) => {
+    if (!query) return text
+    const regex = new RegExp(`(${query.replace(/[.*+?^${}()|[\\]\\]/g, "\\$&")})`, "ig")
+    return text.replace(regex, (m) => `<mark>${m}</mark>`)
+  }
+
+  const isSearching = debouncedQuery !== (filters.query || "")
 
   // Fetch available filters
   useEffect(() => {
@@ -67,24 +94,47 @@ export default function Home() {
     fetchFilters()
   }, [])
 
-  // Fetch all products
+  // Fetch products from server according to filters (debounced for query)
   useEffect(() => {
     const fetchProducts = async () => {
+      setIsFetching(true)
       try {
-        const response = await fetch("/api/products?limit=100") // Get more products initially
+        const params = new URLSearchParams()
+        if (filters.category) params.set("category", filters.category)
+        if (filters.design) params.set("design", filters.design)
+        if (filters.flavor) params.set("flavor", filters.flavor)
+        if (filters.occasion) params.set("occasion", filters.occasion)
+        if (filters.size) params.set("size", filters.size)
+        if (debouncedQuery) params.set("search", debouncedQuery)
+        if (filters.sortBy) params.set("sortBy", filters.sortBy)
+        if (filters.sortOrder) params.set("sortOrder", filters.sortOrder)
+        // request a larger page so infinite scroll works client-side
+        params.set("limit", String(Math.max(48, visibleCount)))
+
+        const response = await fetch(`/api/products?${params.toString()}`)
         if (response.ok) {
           const data = await response.json()
-          setAllProducts(data.products || data) // Handle both paginated and non-paginated responses
+          const products = data.products || data
+          setAllProducts(products)
+          setFilteredProducts(products)
+        } else {
+          console.error("Failed to fetch products: status", response.status)
+          setAllProducts([])
+          setFilteredProducts([])
         }
       } catch (error) {
         console.error("Failed to fetch products:", error)
+        setAllProducts([])
+        setFilteredProducts([])
       } finally {
+        setIsFetching(false)
         setIsLoading(false)
       }
     }
 
     fetchProducts()
-  }, [])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [debouncedQuery, filters.category, filters.design, filters.flavor, filters.occasion, filters.size, filters.sortBy, filters.sortOrder])
 
   // Fetch cart items
   useEffect(() => {
@@ -373,32 +423,64 @@ export default function Home() {
         />
       </div>
 
-      {/* Products Section */}
+            {/* Products Section */}
       <div className="px-1 sm:px-2 md:px-4 pb-12">
         {isLoading ? (
           <ProductGridSkeleton count={8} />
         ) : (
           <>
             {/* Results Header */}
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center space-x-3">
-                <h2 className="text-xl font-semibold">{filters.query ? "Search Results" : "Our Delicious Products"}</h2>
-                <Badge variant="secondary" className="animate-scale-in">
-                  {filteredProducts.length} items
-                </Badge>
-              </div>
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-3">
+                  <div className="flex items-center space-x-3">
+                    <h2 className="text-xl font-semibold">{filters.query ? "Search Results" : "Our Delicious Products"}</h2>
+                    <Badge variant="secondary" className="animate-scale-in">
+                      {filteredProducts.length} items
+                    </Badge>
+                  </div>
 
-              {Object.keys(filters).some((key) => filters[key as keyof typeof filters] && key !== "sortBy" && key !== "sortOrder") && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={clearFilters}
-                  className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                >
-                  Clear All Filters
-                </Button>
-              )}
-            </div>
+                  <div className="flex items-center gap-2">
+                    <select
+                      value={filters.category || ""}
+                      onChange={(e) => updateFilter("category", e.target.value)}
+                      className="h-9 rounded border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm px-3"
+                    >
+                      <option value="">All categories</option>
+                      {availableFilters.categories.map((c: string) => (
+                        <option key={c} value={c}>{c}</option>
+                      ))}
+                    </select>
+
+                    <select
+                      value={filters.sortBy}
+                      onChange={(e) => updateFilter("sortBy", e.target.value)}
+                      className="h-9 rounded border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm px-3"
+                    >
+                      <option value="created_at">Newest</option>
+                      <option value="name">Name</option>
+                      <option value="price">Price</option>
+                    </select>
+
+                    <select
+                      value={filters.sortOrder}
+                      onChange={(e) => updateFilter("sortOrder", e.target.value)}
+                      className="h-9 rounded border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm px-3"
+                    >
+                      <option value="desc">Desc</option>
+                      <option value="asc">Asc</option>
+                    </select>
+
+                    {Object.keys(filters).some((key) => filters[key as keyof typeof filters] && key !== "sortBy" && key !== "sortOrder") && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={clearFilters}
+                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                      >
+                        Clear All Filters
+                      </Button>
+                    )}
+                  </div>
+                </div>
 
             {filteredProducts.length === 0 ? (
               <div className="text-center py-16 space-y-4">

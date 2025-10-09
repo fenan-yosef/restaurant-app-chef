@@ -29,8 +29,9 @@ async function fetchProduct(id: string): Promise<Product | null> {
     }
 }
 
-export default async function ProductPage({ params }: { params: { id: string } }) {
-    const { id } = params
+export default async function ProductPage(props: any) {
+    const { params } = props || {}
+    const { id } = params || {}
     const product = await fetchProduct(id)
     if (!product) return notFound()
 

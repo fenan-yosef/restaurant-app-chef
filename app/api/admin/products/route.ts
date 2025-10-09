@@ -22,9 +22,14 @@ function isAdmin(userId: number | undefined): boolean {
 export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const adminUserId = Number(searchParams.get("adminUserId"))
+    const sortByParam = (searchParams.get("sortBy") || "").toLowerCase()
+    const sortOrderParam = (searchParams.get("sortOrder") || "").toLowerCase()
 
     // Server-side logging for debugging
-    telegramLogger.debug(`Admin products GET: Received adminUserId: ${adminUserId}`, "admin/products/GET")
+    telegramLogger.debug(
+        `Admin products GET: Received adminUserId: ${adminUserId}, sortBy: ${sortByParam}, sortOrder: ${sortOrderParam}`,
+        "admin/products/GET",
+    )
 
     if (!isAdmin(adminUserId)) {
         telegramLogger.warn(
@@ -36,13 +41,30 @@ export async function GET(request: NextRequest) {
 
     telegramLogger.info(`Admin products GET request by user ID: ${adminUserId}`, "admin/products/GET")
 
+    // Whitelist allowed sort columns to prevent SQL injection; map to SQL expressions if needed
+    const allowedSortColumns: Record<string, string> = {
+        id: "id",
+        name: "LOWER(name)",
+        price: "price",
+        category: "LOWER(category)",
+        created_at: "created_at",
+        updated_at: "updated_at",
+        is_available: "is_available",
+        stock: "stock",
+    }
+
+    const sortColumn = allowedSortColumns[sortByParam] || allowedSortColumns["updated_at"]
+    const sortDirection = sortOrderParam === "asc" || sortOrderParam === "desc" ? sortOrderParam : "desc"
+
+    const orderByClause = `${sortColumn} ${sortDirection}, id DESC` // Stable tie-breaker
+
     const query = `
-    SELECT id, name, description, price, category, photos, videos,
-           design, flavor, occasion, size, post_id, is_available, stock,
-           created_at, updated_at
-    FROM products
-    ORDER BY created_at DESC
-  `
+        SELECT id, name, description, price, category, photos, videos,
+                     design, flavor, occasion, size, post_id, is_available, stock,
+                     created_at, updated_at
+        FROM products
+        ORDER BY ${orderByClause}
+    `
     try {
         const result = await pool.query(query)
         return NextResponse.json(result.rows)

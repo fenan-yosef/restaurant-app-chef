@@ -9,6 +9,7 @@ import { config } from "@/lib/config"
 import { telegramLogger } from "@/lib/telegram-logger"
 import { Button } from "@/components/ui/button"
 import { ShieldAlert, ArrowLeft } from "lucide-react"
+import AdminTopBar from "@/components/admin/AdminTopBar"
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
     const router = useRouter()
@@ -20,6 +21,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             return
         }
 
+        // If in development, allow access to /admin even without authentication
+        if (config.app.isDevelopment) {
+            telegramLogger.info("Development mode: bypassing admin auth checks.", "AdminLayout")
+            return
+        }
+
         if (!isAuthenticated || !user) {
             telegramLogger.warn("Admin access denied: User not authenticated or user data missing.", "AdminLayout")
             router.replace("/") // Redirect to home if not authenticated
@@ -27,8 +34,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         }
 
         // Check if the user's ID is in the list of admin chat IDs
-        // In development mode, bypass the admin ID check to allow local access
-        const isAdmin = config.app.isDevelopment ? true : config.app.adminChatIds.includes(Number(user.id))
+        const isAdmin = config.app.adminChatIds.includes(Number(user.id))
         telegramLogger.debug(`Admin check for user ${user.id}: ${isAdmin ? "Granted" : "Denied"}`, "AdminLayout")
 
         // --- DEBUGGING LOGS FOR ADMIN LAYOUT ---
@@ -58,9 +64,19 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         )
     }
 
+    // In development mode, allow rendering the admin UI even if no auth data is present.
+    if (config.app.isDevelopment) {
+        return (
+            <div className="min-h-screen bg-background">
+                <AdminTopBar />
+                {children}
+            </div>
+        )
+    }
+
     // If not authenticated or not an admin, the useEffect will handle redirection.
     // Show a loading/denied state while redirecting or if there's a delay.
-    const isAdmin = user && (config.app.isDevelopment ? true : config.app.adminChatIds.includes(Number(user.id)))
+    const isAdmin = user && config.app.adminChatIds.includes(Number(user.id))
     if (!isAuthenticated || !user || !isAdmin) {
         return (
             <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4 text-center">
@@ -88,5 +104,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     }
 
     // If authorized, render children
-    return <div className="min-h-screen bg-background">{children}</div>
+    return (
+        <div className="min-h-screen bg-background">
+            <AdminTopBar />
+            {children}
+        </div>
+    )
 }

@@ -17,7 +17,7 @@ import {
     DialogTrigger,
 } from "@/components/ui/dialog"
 import ProductForm from "@/components/admin/ProductForm"
-import { Plus, Edit, Trash2, Box, DollarSign, Check, X as XIcon, RefreshCcw } from "lucide-react"
+import { Plus, Edit, Trash2, Box, DollarSign, Check, X as XIcon, RefreshCcw, ArrowUpDown } from "lucide-react"
 import { formatCurrency, toNumber } from "@/lib/utils"
 import { getImageUrl } from "@/lib/product-parser" // Corrected import path
 import { telegramLogger } from "@/lib/telegram-logger"
@@ -31,6 +31,10 @@ export default function ProductTable() {
     const [showProductForm, setShowProductForm] = useState(false)
     const [priceEditingId, setPriceEditingId] = useState<number | null>(null)
     const [tempPrice, setTempPrice] = useState<string>("")
+    const [sortBy, setSortBy] = useState<
+        "updated_at" | "created_at" | "id" | "name" | "price" | "category" | "is_available"
+    >("updated_at")
+    const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc")
 
     const fetchProducts = async () => {
         if (!adminUser?.id) {
@@ -39,7 +43,12 @@ export default function ProductTable() {
         }
         setIsLoading(true)
         try {
-            const response = await fetch(`/api/admin/products?adminUserId=${adminUser.id}`)
+            const params = new URLSearchParams({
+                adminUserId: String(adminUser.id),
+                sortBy,
+                sortOrder,
+            })
+            const response = await fetch(`/api/admin/products?${params.toString()}`)
             if (response.ok) {
                 const data: Product[] = await response.json()
                 setProducts(data)
@@ -59,7 +68,16 @@ export default function ProductTable() {
         if (!authLoading && isAuthenticated && adminUser) {
             fetchProducts()
         }
-    }, [authLoading, isAuthenticated, adminUser])
+    }, [authLoading, isAuthenticated, adminUser, sortBy, sortOrder])
+
+    const toggleSort = (column: typeof sortBy) => {
+        if (sortBy === column) {
+            setSortOrder((prev) => (prev === "asc" ? "desc" : "asc"))
+        } else {
+            setSortBy(column)
+            setSortOrder("asc")
+        }
+    }
 
     const handleEditPrice = (product: Product) => {
         setPriceEditingId(product.id)
@@ -168,6 +186,29 @@ export default function ProductTable() {
                         </CardDescription>
                     </div>
                     <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2">
+                            <label className="text-xs text-slate-500 dark:text-slate-400">Sort by</label>
+                            <select
+                                className="h-8 rounded border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs px-2"
+                                value={sortBy}
+                                onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
+                            >
+                                <option value="updated_at">Updated</option>
+                                <option value="created_at">Created</option>
+                                <option value="id">ID</option>
+                                <option value="name">Name</option>
+                                <option value="price">Price</option>
+                                <option value="category">Category</option>
+                            </select>
+                            <select
+                                className="h-8 rounded border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs px-2"
+                                value={sortOrder}
+                                onChange={(e) => setSortOrder(e.target.value as typeof sortOrder)}
+                            >
+                                <option value="asc">Asc</option>
+                                <option value="desc">Desc</option>
+                            </select>
+                        </div>
                         <Button
                             variant="outline"
                             size="sm"
@@ -208,10 +249,54 @@ export default function ProductTable() {
                             <TableHeader>
                                 <TableRow className="bg-slate-50 dark:bg-slate-800/60">
                                     <TableHead className="w-[84px] text-slate-600 dark:text-slate-300">Thumb</TableHead>
-                                    <TableHead className="min-w-[220px] text-slate-600 dark:text-slate-300">Name & Meta</TableHead>
-                                    <TableHead className="w-[140px] text-slate-600 dark:text-slate-300">Category</TableHead>
-                                    <TableHead className="w-[120px] text-slate-600 dark:text-slate-300 text-right">Price</TableHead>
-                                    <TableHead className="w-[120px] text-slate-600 dark:text-slate-300 text-center">Status</TableHead>
+                                    <TableHead
+                                        onClick={() => toggleSort("name")}
+                                        className="min-w-[220px] text-slate-600 dark:text-slate-300 cursor-pointer select-none"
+                                        title="Sort by name"
+                                    >
+                                        <div className="inline-flex items-center gap-1">
+                                            Name & Meta
+                                            {sortBy === "name" && (
+                                                <ArrowUpDown className={`h-3 w-3 ${sortOrder === "asc" ? "rotate-180" : ""}`} />
+                                            )}
+                                        </div>
+                                    </TableHead>
+                                    <TableHead
+                                        onClick={() => toggleSort("category")}
+                                        className="w-[140px] text-slate-600 dark:text-slate-300 cursor-pointer select-none"
+                                        title="Sort by category"
+                                    >
+                                        <div className="inline-flex items-center gap-1">
+                                            Category
+                                            {sortBy === "category" && (
+                                                <ArrowUpDown className={`h-3 w-3 ${sortOrder === "asc" ? "rotate-180" : ""}`} />
+                                            )}
+                                        </div>
+                                    </TableHead>
+                                    <TableHead
+                                        onClick={() => toggleSort("price")}
+                                        className="w-[120px] text-slate-600 dark:text-slate-300 text-right cursor-pointer select-none"
+                                        title="Sort by price"
+                                    >
+                                        <div className="inline-flex items-center gap-1 justify-end w-full">
+                                            <span>Price</span>
+                                            {sortBy === "price" && (
+                                                <ArrowUpDown className={`h-3 w-3 ${sortOrder === "asc" ? "rotate-180" : ""}`} />
+                                            )}
+                                        </div>
+                                    </TableHead>
+                                    <TableHead
+                                        onClick={() => toggleSort("is_available")}
+                                        className="w-[120px] text-slate-600 dark:text-slate-300 text-center cursor-pointer select-none"
+                                        title="Sort by availability"
+                                    >
+                                        <div className="inline-flex items-center gap-1">
+                                            Status
+                                            {sortBy === "is_available" && (
+                                                <ArrowUpDown className={`h-3 w-3 ${sortOrder === "asc" ? "rotate-180" : ""}`} />
+                                            )}
+                                        </div>
+                                    </TableHead>
                                     <TableHead className="w-[140px] text-center text-slate-600 dark:text-slate-300">Actions</TableHead>
                                 </TableRow>
                             </TableHeader>

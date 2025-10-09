@@ -4,10 +4,11 @@ import { useState, useEffect } from "react"
 import { useTelegram } from "@/hooks/useTelegram"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
-import { Package, Box, Users } from "lucide-react" // Import Users icon
+import { Package, Box, Users, BarChart2 } from "lucide-react" // Import Users icon
 import OrderTable from "@/components/admin/OrderTable"
 import ProductTable from "@/components/admin/ProductTable"
 import UserTable from "@/components/admin/UserTable" // Import UserTable
+import Analytics from "../../components/admin/Analytics"
 import { telegramLogger } from "@/lib/telegram-logger"
 
 export default function AdminDashboardPage() {
@@ -38,7 +39,7 @@ export default function AdminDashboardPage() {
             </Card>
 
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-                <TabsList className="grid w-full grid-cols-3 rounded-xl bg-slate-100 dark:bg-slate-800/70 p-1 gap-1">
+                <TabsList className="grid w-full grid-cols-4 rounded-xl bg-slate-100 dark:bg-slate-800/70 p-1 gap-1">
                     <TabsTrigger
                         value="orders"
                         className="flex items-center justify-center gap-2 rounded-lg text-xs sm:text-sm font-medium data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-sm dark:data-[state=active]:bg-indigo-600"
@@ -60,6 +61,13 @@ export default function AdminDashboardPage() {
                         <Users className="h-4 w-4" /> {/* New icon */}
                         <span>Users</span>
                     </TabsTrigger>
+                    <TabsTrigger
+                        value="analytics"
+                        className="flex items-center justify-center gap-2 rounded-lg text-xs sm:text-sm font-medium data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-sm dark:data-[state=active]:bg-indigo-600"
+                    >
+                        <BarChart2 className="h-4 w-4" />
+                        <span>Analytics</span>
+                    </TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="orders" className="mt-6">
@@ -70,6 +78,9 @@ export default function AdminDashboardPage() {
                 </TabsContent>
                 <TabsContent value="users" className="mt-6"> {/* New tab content */}
                     <UserTable />
+                </TabsContent>
+                <TabsContent value="analytics" className="mt-6">
+                    <Analytics />
                 </TabsContent>
             </Tabs>
         </div>

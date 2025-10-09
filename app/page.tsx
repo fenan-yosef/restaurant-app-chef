@@ -423,64 +423,64 @@ export default function Home() {
         />
       </div>
 
-            {/* Products Section */}
+      {/* Products Section */}
       <div className="px-1 sm:px-2 md:px-4 pb-12">
         {isLoading ? (
           <ProductGridSkeleton count={8} />
         ) : (
           <>
             {/* Results Header */}
-                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-3">
-                  <div className="flex items-center space-x-3">
-                    <h2 className="text-xl font-semibold">{filters.query ? "Search Results" : "Our Delicious Products"}</h2>
-                    <Badge variant="secondary" className="animate-scale-in">
-                      {filteredProducts.length} items
-                    </Badge>
-                  </div>
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-3">
+              <div className="flex items-center space-x-3">
+                <h2 className="text-xl font-semibold">{filters.query ? "Search Results" : "Our Delicious Products"}</h2>
+                <Badge variant="secondary" className="animate-scale-in">
+                  {filteredProducts.length} items
+                </Badge>
+              </div>
 
-                  <div className="flex items-center gap-2">
-                    <select
-                      value={filters.category || ""}
-                      onChange={(e) => updateFilter("category", e.target.value)}
-                      className="h-9 rounded border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm px-3"
-                    >
-                      <option value="">All categories</option>
-                      {availableFilters.categories.map((c: string) => (
-                        <option key={c} value={c}>{c}</option>
-                      ))}
-                    </select>
+              <div className="flex items-center gap-2">
+                <select
+                  value={filters.category || ""}
+                  onChange={(e) => updateFilter("category", e.target.value)}
+                  className="h-9 rounded border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm px-3"
+                >
+                  <option value="">All categories</option>
+                  {availableFilters.categories.map((c: string) => (
+                    <option key={c} value={c}>{c}</option>
+                  ))}
+                </select>
 
-                    <select
-                      value={filters.sortBy}
-                      onChange={(e) => updateFilter("sortBy", e.target.value)}
-                      className="h-9 rounded border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm px-3"
-                    >
-                      <option value="created_at">Newest</option>
-                      <option value="name">Name</option>
-                      <option value="price">Price</option>
-                    </select>
+                <select
+                  value={filters.sortBy}
+                  onChange={(e) => updateFilter("sortBy", e.target.value)}
+                  className="h-9 rounded border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm px-3"
+                >
+                  <option value="created_at">Newest</option>
+                  <option value="name">Name</option>
+                  <option value="price">Price</option>
+                </select>
 
-                    <select
-                      value={filters.sortOrder}
-                      onChange={(e) => updateFilter("sortOrder", e.target.value)}
-                      className="h-9 rounded border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm px-3"
-                    >
-                      <option value="desc">Desc</option>
-                      <option value="asc">Asc</option>
-                    </select>
+                <select
+                  value={filters.sortOrder}
+                  onChange={(e) => updateFilter("sortOrder", e.target.value)}
+                  className="h-9 rounded border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm px-3"
+                >
+                  <option value="desc">Desc</option>
+                  <option value="asc">Asc</option>
+                </select>
 
-                    {Object.keys(filters).some((key) => filters[key as keyof typeof filters] && key !== "sortBy" && key !== "sortOrder") && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={clearFilters}
-                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                      >
-                        Clear All Filters
-                      </Button>
-                    )}
-                  </div>
-                </div>
+                {Object.keys(filters).some((key) => filters[key as keyof typeof filters] && key !== "sortBy" && key !== "sortOrder") && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={clearFilters}
+                    className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                  >
+                    Clear All Filters
+                  </Button>
+                )}
+              </div>
+            </div>
 
             {filteredProducts.length === 0 ? (
               <div className="text-center py-16 space-y-4">

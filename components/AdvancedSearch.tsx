@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -34,6 +34,7 @@ export default function AdvancedSearch({
 }: AdvancedSearchProps) {
     const [isExpanded, setIsExpanded] = useState(false)
     const [showSortOptions, setShowSortOptions] = useState(false)
+    const tabsListRef = useRef<HTMLDivElement | null>(null)
 
     const activeFiltersCount = Object.entries(filters).filter(
         ([key, value]) => value && value !== "" && value !== "all" && key !== "sortBy" && key !== "sortOrder",
@@ -50,6 +51,50 @@ export default function AdvancedSearch({
             sortOrder: "desc",
         })
     }
+
+    // Ensure the tabs start scrolled to the beginning and keep the active tab visible
+    useEffect(() => {
+        const el = tabsListRef.current
+        if (!el) return
+
+        const scrollToStart = (smooth = false) => {
+            try {
+                if (smooth) el.scrollTo({ left: 0, behavior: "smooth" })
+                else el.scrollLeft = 0
+            } catch (e) {
+                ; (el as any).scrollLeft = 0
+            }
+        }
+
+        const centerActive = () => {
+            const active = el.querySelector<HTMLElement>("[data-state='active']")
+            if (active) {
+                try {
+                    active.scrollIntoView({ inline: "center", block: "nearest", behavior: "smooth" })
+                } catch (e) {
+                    active.scrollIntoView({ inline: "center", block: "nearest" })
+                }
+            }
+        }
+
+        // If no category filter (All), force the scroll position to start.
+        if (!filters.category) {
+            // immediate attempt, then retry after paint to avoid race with layout
+            scrollToStart(false)
+            requestAnimationFrame(() => scrollToStart(true))
+        } else {
+            centerActive()
+        }
+
+        // Keep it correct on resize
+        const onResize = () => {
+            if (!filters.category) scrollToStart(false)
+            else centerActive()
+        }
+
+        window.addEventListener("resize", onResize)
+        return () => window.removeEventListener("resize", onResize)
+    }, [filters.category])
 
     return (
         <div className="space-y-5 animate-fade-in min-w-0">
@@ -83,12 +128,12 @@ export default function AdvancedSearch({
 
             {/* Quick Category Tabs */}
             {availableFilters.categories.length > 0 && (
-                <div className="bg-white/80 dark:bg-slate-900/60 backdrop-blur rounded-xl border border-slate-200 dark:border-slate-700 p-4 shadow-sm w-full overflow-hidden">
+                <div className="bg-white/80 dark:bg-slate-900/60 backdrop-blur rounded-xl border border-slate-200 dark:border-slate-700 p-4 shadow-sm w-full pl-1">
                     <Tabs
                         value={filters.category || "all"}
                         onValueChange={(value) => handleFilterChange("category", value === "all" ? "" : value)}
                     >
-                        <TabsList className="flex flex-nowrap w-full max-w-full overflow-x-auto overscroll-x-contain scrollbar-hide bg-slate-100 dark:bg-slate-800/70 p-1 rounded-full gap-1 -mx-1 px-1">
+                        <TabsList ref={tabsListRef} className="flex flex-nowrap w-full max-w-full overflow-x-auto overflow-y-hidden overscroll-x-contain scrollbar-hide bg-slate-100 dark:bg-slate-800/70 p-1 rounded-full gap-1 px-2">
                             <TabsTrigger
                                 value="all"
                                 className="flex-shrink-0 whitespace-nowrap rounded-full px-4 py-2 text-xs sm:text-sm font-medium transition-colors data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-sm hover:bg-blue-100 dark:hover:bg-slate-700 dark:data-[state=active]:bg-indigo-600"
@@ -99,6 +144,12 @@ export default function AdvancedSearch({
                                 <TabsTrigger
                                     key={category}
                                     value={category}
+                                    onClick={() => {
+                                        // If clicking the already-selected category, toggle back to All
+                                        if ((filters.category || "") === category) {
+                                            handleFilterChange("category", "")
+                                        }
+                                    }}
                                     className="flex-shrink-0 whitespace-nowrap rounded-full px-4 py-2 text-xs sm:text-sm font-medium transition-colors data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-sm hover:bg-blue-100 dark:hover:bg-slate-700 dark:data-[state=active]:bg-indigo-600"
                                 >
                                     {category}

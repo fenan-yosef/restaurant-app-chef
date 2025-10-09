@@ -76,22 +76,26 @@ export default function ProductCard({
         setLikeCount((c) => (c == null ? c : (prevLiked ? c - 1 : c + 1)))
 
         try {
+            if (typeof window !== 'undefined') console.debug('[ProductCard] handleLike', { productId: product.id, prevLiked })
             // use auth state from hook at component top (don't call hooks conditionally)
             if (isAuthenticated && authUser && Number(authUser.id) > 0) {
                 // server-backed like/unlike
                 if (!prevLiked) {
+                    if (typeof window !== 'undefined') console.debug('[ProductCard] calling apiClient.likeProduct', product.id)
                     const res = await apiClient.likeProduct(product.id)
                     setLikeCount(res.count)
                     setIsLiked(true)
                     // notify page-level counts
                     if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('likes-updated', { detail: { productId: product.id, count: res.count, isLiked: true } }))
                 } else {
+                    if (typeof window !== 'undefined') console.debug('[ProductCard] calling apiClient.unlikeProduct', product.id)
                     const res = await apiClient.unlikeProduct(product.id)
                     setLikeCount(res.count)
                     setIsLiked(false)
                     if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('likes-updated', { detail: { productId: product.id, count: res.count, isLiked: false } }))
                 }
             } else {
+                if (typeof window !== 'undefined') console.debug('[ProductCard] guest fallback like toggle for', product.id)
                 // guest/local fallback using localStorage
                 const guestKey = `liked_products_${typeof window !== 'undefined' ? window.location.hostname : 'local'}`
                 const raw = typeof window !== 'undefined' ? localStorage.getItem(guestKey) : null
@@ -258,7 +262,7 @@ export default function ProductCard({
                                 alt={`${product.name} (${idx + 1})`}
                                 fill
                                 className={cn(
-                                    "transition-opacity duration-500 object-contain sm:object-cover",
+                                    "transition-opacity duration-500 object-cover object-center",
                                     imageLoaded ? "opacity-100" : "opacity-0",
                                 )}
                                 sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"

@@ -389,7 +389,7 @@ export default function Home() {
 
   // Main app content when authenticated
   return (
-    <div className="min-h-screen mx-auto max-w-[1450px] w-full px-2 sm:px-4 overflow-x-hidden">
+    <div className="min-h-screen mx-auto max-w-[1450px] w-full px-2 sm:px-4 overflow-x-visible">
       {/* Header */}
       <div className="sticky top-0 z-20 backdrop-blur-xl supports-[backdrop-filter]:bg-white/70 dark:supports-[backdrop-filter]:bg-slate-900/60 border-b border-slate-200/70 dark:border-slate-700/60">
         <div className="px-2 sm:px-4 py-4">

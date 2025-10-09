@@ -20,12 +20,24 @@ class ApiClient {
         try {
             if (typeof window !== 'undefined') {
                 const params = new URLSearchParams(window.location.search)
-                if (params.get('realapi') === '1') return false
+                if (params.get('realapi') === '1') {
+                    console.debug('[apiClient] realapi override in URL, using real API')
+                    return false
+                }
+                // If a session_user cookie exists we should prefer the real API so likes persist
+                const cookieMatch = document.cookie.match(/session_user=([^;\s]+)/)
+                if (cookieMatch && Number(cookieMatch[1]) > 0) {
+                    console.debug('[apiClient] session_user cookie detected, using real API')
+                    return false
+                }
             }
         } catch (e) {
             // ignore
         }
-        if (process.env.NEXT_PUBLIC_FORCE_REAL_API === '1') return false
+        if (process.env.NEXT_PUBLIC_FORCE_REAL_API === '1') {
+            console.debug('[apiClient] NEXT_PUBLIC_FORCE_REAL_API set, using real API')
+            return false
+        }
         return true
     }
 
@@ -39,6 +51,7 @@ class ApiClient {
         const timeoutId = setTimeout(() => controller.abort(), this.timeout)
 
         try {
+            if (typeof window !== 'undefined') console.debug('[apiClient] fetch', url, options)
             const response = await fetch(url, {
                 ...options,
                 signal: controller.signal,
@@ -196,6 +209,7 @@ class ApiClient {
         }
 
         // Include credentials so session cookie (session_user) is sent with the request
+        console.debug('[apiClient] GET /likes?productId=', productId)
         const response = await this.fetchWithTimeout(`${this.baseUrl}/likes?productId=${productId}`, {
             credentials: 'include',
         })
@@ -212,6 +226,7 @@ class ApiClient {
             return Promise.resolve({ count, is_liked: true })
         }
 
+        console.debug('[apiClient] POST /likes', { productId })
         const response = await this.fetchWithTimeout(`${this.baseUrl}/likes`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -232,6 +247,7 @@ class ApiClient {
             return Promise.resolve({ count, is_liked: false })
         }
 
+        console.debug('[apiClient] DELETE /likes', { productId })
         const response = await this.fetchWithTimeout(`${this.baseUrl}/likes?productId=${productId}`, {
             method: "DELETE",
             credentials: 'include',
@@ -253,6 +269,7 @@ class ApiClient {
 
         if (productIds.length === 0) return Promise.resolve({})
         const ids = productIds.join(',')
+        console.debug('[apiClient] GET /likes?ids=', ids)
         const res = await this.fetchWithTimeout(`${this.baseUrl}/likes?ids=${ids}`)
         if (!res.ok) throw new Error('Failed to fetch like counts')
         const data = await res.json()

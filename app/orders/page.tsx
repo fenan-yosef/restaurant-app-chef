@@ -25,18 +25,22 @@ export default function OrdersPage() {
     // Fetch orders
     useEffect(() => {
         const fetchOrders = async () => {
-            if (user) {
-                try {
-                    const response = await fetch(`/api/orders?userId=${user.id}`)
-                    if (response.ok) {
-                        const data = await response.json()
-                        setOrders(data)
-                    }
-                } catch (error) {
-                    console.error("Failed to fetch orders:", error)
-                } finally {
-                    setIsLoading(false)
+            // If there's no authenticated user, stop loading and show empty state
+            if (!user) {
+                setIsLoading(false)
+                return
+            }
+
+            try {
+                const response = await fetch(`/api/orders?userId=${user.id}`)
+                if (response.ok) {
+                    const data = await response.json()
+                    setOrders(data)
                 }
+            } catch (error) {
+                console.error("Failed to fetch orders:", error)
+            } finally {
+                setIsLoading(false)
             }
         }
 
@@ -69,13 +73,27 @@ export default function OrdersPage() {
 
     return (
         <div className="min-h-screen bg-background">
-            {/* Header */}
+            {/* Nav / Header */}
             <div className="bg-background shadow-sm border-b sticky top-0 z-10">
-                <div className="px-4 py-3">
-                    <h1 className="text-xl font-bold">📦 Your Orders</h1>
-                    <p className="text-sm text-gray-600">
-                        {orders.length} order{orders.length !== 1 ? "s" : ""}
-                    </p>
+                <div className="px-4 py-3 flex items-center gap-3">
+                    <button
+                        onClick={() => router.push("/")}
+                        aria-label="Back"
+                        className="p-2 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800"
+                    >
+                        <ArrowLeft className="h-5 w-5" />
+                    </button>
+
+                    <div>
+                        <h1 className="text-xl font-bold">📦 Your Orders</h1>
+                        <p className="text-sm text-gray-600">
+                            {orders.length} order{orders.length !== 1 ? "s" : ""}
+                        </p>
+                    </div>
+
+                    <div className="ml-auto flex items-center gap-2">
+                        {/* Placeholder for additional actions (filter, refresh, etc.) */}
+                    </div>
                 </div>
             </div>
 

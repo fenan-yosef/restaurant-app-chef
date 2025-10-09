@@ -5,6 +5,9 @@ import { useCart } from "@/hooks/useCart"
 import { useAuth } from "@/hooks/useAuth"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
+import { Label } from "@/components/ui/label"
 import { useRouter } from "next/navigation"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -19,6 +22,12 @@ export default function CartPage() {
 
     const [serverItems, setServerItems] = useState<any[]>([])
     const [loadingServer, setLoadingServer] = useState(false)
+
+    // Checkout form state
+    const [phoneNumber, setPhoneNumber] = useState("")
+    const [deliveryAddress, setDeliveryAddress] = useState("")
+    const [notes, setNotes] = useState("")
+    const [placingOrder, setPlacingOrder] = useState(false)
 
     // When authenticated (non-guest), fetch server cart
     useEffect(() => {
@@ -49,6 +58,49 @@ export default function CartPage() {
     }, [isLocalMode, localItems, serverItems])
 
     const subtotal = allItems.reduce((s, it) => s + (Number(it.product?.price || it.price || 0) || 0) * (it.quantity || 0), 0)
+
+    const handlePlaceOrder = async () => {
+        if (!isAuthenticated || isGuest || !user?.id) {
+            toast.error('Please login via Telegram to place an order')
+            return
+        }
+
+        if (!phoneNumber.trim() || !deliveryAddress.trim()) {
+            toast.error('Phone number and delivery address are required')
+            return
+        }
+
+        setPlacingOrder(true)
+        try {
+            const res = await fetch('/api/orders', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({
+                    userId: user.id,
+                    deliveryAddress,
+                    phoneNumber,
+                    notes,
+                })
+            })
+
+            if (!res.ok) {
+                let msg = 'Failed to place order'
+                try {
+                    const data = await res.json()
+                    if (data?.error) msg = data.error
+                } catch { }
+                throw new Error(msg)
+            }
+
+            toast.success('Order placed successfully')
+            router.push('/orders')
+        } catch (err: any) {
+            toast.error(err?.message || 'Failed to place order')
+        } finally {
+            setPlacingOrder(false)
+        }
+    }
 
     return (
         <div className="max-w-4xl mx-auto p-4 sm:p-6 space-y-6">
@@ -167,31 +219,46 @@ export default function CartPage() {
                 ))}
             </div>
 
-            {/* Totals & actions */}
+            {/* Totals & checkout form */}
             {allItems.length > 0 && (
-                <div className="mt-6 p-4 bg-white dark:bg-slate-900 rounded-md border">
+                <div className="mt-6 p-4 bg-white dark:bg-slate-900 rounded-md border space-y-4">
                     <div className="flex items-center justify-between">
                         <div>
                             <div className="text-sm text-gray-600">Subtotal</div>
                             <div className="text-lg font-bold">{subtotal.toFixed(2)}</div>
                         </div>
-                        <div className="flex items-center gap-2">
-                            {isLocalMode ? (
+                        {isLocalMode && (
+                            <div className="flex items-center gap-2">
                                 <Button onClick={() => {
-                                    // encourage login/merge
                                     toast('Open this app in Telegram to sync and checkout')
                                 }}>Login to Sync</Button>
-                            ) : (
-                                <>
-                                    <Button onClick={() => { router.push('/orders') }}>Checkout</Button>
-                                    {/* Proceed to Order visible only for authenticated non-guest sessions */}
-                                    {(isAuthenticated && !isGuest) && (
-                                        <Button variant="secondary" onClick={() => { router.push('/orders') }}>Proceed to Order</Button>
-                                    )}
-                                </>
-                            )}
-                        </div>
+                            </div>
+                        )}
                     </div>
+
+                    {!isLocalMode && (
+                        <div className="space-y-3">
+                            <div className="grid grid-cols-1 gap-3">
+                                <div className="space-y-1">
+                                    <Label htmlFor="phoneNumber">Phone Number</Label>
+                                    <Input id="phoneNumber" inputMode="tel" placeholder="e.g. +251 9XX XXX XXX" value={phoneNumber} onChange={e => setPhoneNumber(e.target.value)} />
+                                </div>
+                                <div className="space-y-1">
+                                    <Label htmlFor="deliveryAddress">Delivery Address</Label>
+                                    <Textarea id="deliveryAddress" rows={3} placeholder="Street, building, landmark, etc." value={deliveryAddress} onChange={e => setDeliveryAddress(e.target.value)} />
+                                </div>
+                                <div className="space-y-1">
+                                    <Label htmlFor="notes">Notes (optional)</Label>
+                                    <Textarea id="notes" rows={2} placeholder="Any special requests?" value={notes} onChange={e => setNotes(e.target.value)} />
+                                </div>
+                            </div>
+                            <div className="flex justify-end">
+                                <Button onClick={handlePlaceOrder} disabled={placingOrder}>
+                                    {placingOrder ? 'Placing...' : 'Place Order'}
+                                </Button>
+                            </div>
+                        </div>
+                    )}
                 </div>
             )}
 

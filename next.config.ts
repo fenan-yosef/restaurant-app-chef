@@ -8,6 +8,8 @@ const nextConfig: NextConfig = {
       'cdn4.cdn-telegram.org',
       'api.telegram.org',
       'storage-api-six.vercel.app',
+      // Telegram image CDN used in order/item photos
+      'cdn4.telesco.pe',
     ],
     //—or, if you need more control:
     // remotePatterns: [
